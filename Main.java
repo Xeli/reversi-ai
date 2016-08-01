@@ -46,7 +46,7 @@ public class Main {
             board = board.makeMove(move);
             window.update(board);
         }
-        while(true) {
+        while(!board.isFinished()) {
             if(PossibleMoves.getValidPositions(board, opponentColor).size() > 0) {
                 List<Position> validPositions = PossibleMoves.getValidPositions(board, opponentColor);
                 Position newPosition = null;
