@@ -95,12 +95,20 @@ public class Board{
         return swaps;
     }
 
+    public FieldValue getFieldValue(int row, int column) {
+        return board[row][column];
+    }
+
     public FieldValue getFieldValue(Position position) {
         return board[position.row][position.column];
     }
 
     public boolean isFinished() {
         return whites.size() + blacks.size() == 8*8;
+    }
+
+    public FieldValue getWinner() {
+        return whites.size() > blacks.size() ? FieldValue.WHITE : FieldValue.BLACK;
     }
 
     public void print() {
