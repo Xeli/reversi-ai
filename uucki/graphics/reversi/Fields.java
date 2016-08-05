@@ -47,19 +47,24 @@ public class Fields extends Canvas implements MouseListener{
 
         for(int row = 0; row < values.length; row++) {
             for(int column = 0; column < values[row].length; column++) {
-                switch(values[row][column]) {
-                    case EMPTY:
-                        g.setColor(Color.GRAY);
-                        g.fillRect(row * fieldWidth, column * fieldHeight, fieldWidth, fieldHeight);
-                        break;
-                    case WHITE:
-                        g.setColor(Color.WHITE);
-                        g.fillOval(row * fieldWidth, column * fieldHeight, fieldWidth, fieldHeight);
-                        break;
-                    case BLACK:
-                        g.setColor(Color.BLACK);
-                        g.fillOval(row * fieldWidth, column * fieldHeight, fieldWidth, fieldHeight);
-                        break;
+                if(values[row][column] == null) {
+                    g.setColor(Color.GRAY);
+                    g.fillRect(row * fieldWidth, column * fieldHeight, fieldWidth, fieldHeight);
+                } else {
+                    switch(values[row][column]) {
+                        case EMPTY:
+                            g.setColor(Color.GRAY);
+                            g.fillRect(row * fieldWidth, column * fieldHeight, fieldWidth, fieldHeight);
+                            break;
+                        case WHITE:
+                            g.setColor(Color.WHITE);
+                            g.fillOval(row * fieldWidth, column * fieldHeight, fieldWidth, fieldHeight);
+                            break;
+                        case BLACK:
+                            g.setColor(Color.BLACK);
+                            g.fillOval(row * fieldWidth, column * fieldHeight, fieldWidth, fieldHeight);
+                            break;
+                    }
                 }
             }
         }

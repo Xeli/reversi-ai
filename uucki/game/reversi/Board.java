@@ -8,28 +8,20 @@ import java.util.*;
 
 public class Board{
 
-    public FieldValue[][] board = new FieldValue[8][8];
-    public List<Position> whites = new ArrayList<Position>();
-    public List<Position> blacks = new ArrayList<Position>();
-
-    public Board(){
-        for(int row = 0; row < board.length; row++) {
-            for(int col = 0; col < board[row].length; col++) {
-                board[row][col] = FieldValue.EMPTY;
-            }
-        }
-    }
+    public FieldValue[] board = new FieldValue[8*8];
+    public int whites = 0;
+    public int blacks = 0;
 
     public Board makeMove(Move move) {
         Board newBoard = (Board)clone();
 
-        newBoard.board[move.row][move.column] = move.value;
-
         Position position = new Position(move);
-        if(move.value == FieldValue.BLACK) {
-            newBoard.blacks.add(position);
-        } else if (move.value == FieldValue.WHITE) {
-            newBoard.whites.add(position);
+
+        newBoard.setFieldValue(position, move.value);
+        if(move.value == FieldValue.WHITE) {
+            newBoard.whites++;
+        } else {
+            newBoard.blacks++;
         }
 
         newBoard.swapFields(position, move.value, false);
@@ -79,13 +71,13 @@ public class Board{
         while(Board.validPosition(currentPosition) && getFieldValue(currentPosition) == opponentColor) {
             swaps++;
             if(!countOnly) {
-                board[currentPosition.row][currentPosition.column] = color;
-                if(color == FieldValue.BLACK) {
-                    whites.remove(currentPosition);
-                    blacks.add(currentPosition);
+                setFieldValue(currentPosition, color);
+                if(color == FieldValue.WHITE) {
+                    whites++;
+                    blacks--;
                 } else {
-                    blacks.remove(currentPosition);
-                    whites.add(currentPosition);
+                    whites--;
+                    blacks++;
                 }
             }
             currentPosition.row += rowDirection;
@@ -95,45 +87,63 @@ public class Board{
         return swaps;
     }
 
+    public void setFieldValue(int row, int column, FieldValue color) {
+        board[row * 8 + column] = color;
+    }
+
+    public void setFieldValue(Position position, FieldValue color) {
+        board[position.row * 8 + position.column] = color;
+    }
+
     public FieldValue getFieldValue(int row, int column) {
-        return board[row][column];
+        return board[row * 8 + column];
     }
 
     public FieldValue getFieldValue(Position position) {
-        return board[position.row][position.column];
+        return board[position.row * 8 + position.column];
     }
 
     public boolean isFinished() {
-        return whites.size() + blacks.size() == 8*8;
+        if(emptyFields() == 0) {
+            return true;
+        }
+
+        return PossibleMoves.getValidPositions(this, FieldValue.WHITE).size() + PossibleMoves.getValidPositions(this, FieldValue.BLACK).size() == 0;
     }
 
     public FieldValue getWinner() {
-        return whites.size() > blacks.size() ? FieldValue.WHITE : FieldValue.BLACK;
+        return whites > blacks ? FieldValue.WHITE : FieldValue.BLACK;
+    }
+
+    public int emptyFields() {
+        return 8*8 - (whites + blacks);
     }
 
     public void print() {
         System.out.print("=");
-        for(int column = 0; column < board[0].length; column++) {
+        for(int column = 0; column < 8; column++) {
             System.out.print(column);
         }
         System.out.println("=");
-        for(FieldValue[] row : board) {
-            System.out.print("=");
-            for(FieldValue field : row) {
-                System.out.print(field);
+        for(int i = 0; i < board.length; i++) {
+            if(i % 8 == 0) {
+                System.out.print("=");
             }
-            System.out.println("=");
+
+            System.out.print(board[i] == null ? " " : board[i]);
+
+            if(i % 8 == 0) {
+                System.out.println("=");
+            }
         }
         System.out.println(new String(new char[10]).replace("\0", "="));
     }
 
     public Object clone() {
         Board newBoard = new Board();
-        for(int row = 0; row < board.length; row++) {
-            newBoard.board[row] = Arrays.copyOf(board[row], board[row].length);
-        }
-        newBoard.whites = new ArrayList<Position>(whites);
-        newBoard.blacks = new ArrayList<Position>(blacks);
+        newBoard.board = Arrays.copyOf(board, board.length);
+        newBoard.whites = whites;
+        newBoard.blacks = blacks;
         return newBoard;
     }
 

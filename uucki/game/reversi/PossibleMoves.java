@@ -12,13 +12,13 @@ public class PossibleMoves{
         List<Position> validPositions = getValidPositions(board, color);
 
         System.out.print("=");
-        for(int column = 0; column < board.board[0].length; column++) {
+        for(int column = 0; column < 8; column++) {
             System.out.print(column);
         }
         System.out.println();
-        for(int row = 0; row < board.board.length; row++) {
+        for(int row = 0; row < 8; row++) {
             System.out.print(row);
-            for(int column = 0; column < board.board[row].length; column++) {
+            for(int column = 0; column < 8; column++) {
                 Position pos = new Position(row, column);
                 if(validPositions.contains(pos)) {
                     System.out.print("o");
@@ -36,7 +36,7 @@ public class PossibleMoves{
         for(int row = 0; row < 8; row++) {
             for(int column = 0; column < 8; column++) {
                 Position position = new Position(row, column);
-                if(board.getFieldValue(position) != FieldValue.EMPTY) {
+                if(board.getFieldValue(position) == FieldValue.BLACK || board.getFieldValue(position) == FieldValue.WHITE) {
                     continue;
                 }
                 int swapCount = board.swapFields(position, color, true);
