@@ -63,8 +63,10 @@ public class Main {
 
             //Computer move
             Move move = minimax.run(board, color);
-            board = board.makeMove(move);
-            window.update(board);
+            if(move != null) {
+                board = board.makeMove(move);
+                window.update(board);
+            }
         }
     }
 
