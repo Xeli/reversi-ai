@@ -1,6 +1,5 @@
 package uucki.heuristic.reversi;
 
-import uucki.game.reversi.PossibleMoves;
 import uucki.game.reversi.Board;
 import uucki.type.FieldValue;
 import uucki.type.Position;

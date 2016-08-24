@@ -6,7 +6,7 @@ import uucki.type.Position;
 
 import java.util.*;
 
-public class PossibleMoves{
+class PossibleMoves{
 
     public static void printBoard(Board board, FieldValue color) {
         List<Position> validPositions = getValidPositions(board, color);

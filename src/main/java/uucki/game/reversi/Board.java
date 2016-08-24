@@ -12,20 +12,17 @@ public class Board{
     public int whites = 0;
     public int blacks = 0;
 
+    private List<Position> possibleWhitePositions = null;
+    private List<Position> possibleBlackPositions = null;
+
     public Board makeMove(Move move) {
         Board newBoard = (Board)clone();
-
         Position position = new Position(move);
-
         newBoard.setFieldValue(position, move.value);
-        if(move.value == FieldValue.WHITE) {
-            newBoard.whites++;
-        } else {
-            newBoard.blacks++;
-        }
-
         newBoard.swapFields(position, move.value, false);
 
+        newBoard.possibleWhitePositions = null;
+        newBoard.possibleBlackPositions = null;
         return newBoard;
     }
 
@@ -41,6 +38,20 @@ public class Board{
         totalSwaps += swapFieldsInDirection( 1,  1, position, color, countOnly);
 
         return totalSwaps;
+    }
+
+    public List<Position> getPossiblePositions(FieldValue color) {
+        if(color == FieldValue.WHITE) {
+            if(possibleWhitePositions == null) {
+                possibleWhitePositions = PossibleMoves.getValidPositions(this, color);
+            }
+            return possibleWhitePositions;
+        } else {
+            if(possibleBlackPositions == null) {
+                possibleBlackPositions = PossibleMoves.getValidPositions(this, color);
+            }
+            return possibleBlackPositions;
+        }
     }
 
     private int swapFieldsInDirection(int rowDirection, int columnDirection, Position position, FieldValue color, boolean countOnly) {
@@ -72,13 +83,6 @@ public class Board{
             swaps++;
             if(!countOnly) {
                 setFieldValue(currentPosition, color);
-                if(color == FieldValue.WHITE) {
-                    whites++;
-                    blacks--;
-                } else {
-                    whites--;
-                    blacks++;
-                }
             }
             currentPosition.row += rowDirection;
             currentPosition.column += columnDirection;
@@ -88,11 +92,28 @@ public class Board{
     }
 
     public void setFieldValue(int row, int column, FieldValue color) {
+        possibleBlackPositions = null;
+        possibleWhitePositions = null;
+        FieldValue oldColor = board[row * 8 + column];
+        if(oldColor == color) {
+            return;
+        }
+        if(color == FieldValue.WHITE) {
+            whites++;
+            if(oldColor == FieldValue.BLACK) {
+                blacks--;
+            }
+        } else {
+            blacks++;
+            if(oldColor == FieldValue.WHITE) {
+                whites--;
+            }
+        }
         board[row * 8 + column] = color;
     }
 
     public void setFieldValue(Position position, FieldValue color) {
-        board[position.row * 8 + position.column] = color;
+        setFieldValue(position.row, position.column, color);
     }
 
     public FieldValue getFieldValue(int row, int column) {
@@ -108,7 +129,7 @@ public class Board{
             return true;
         }
 
-        return PossibleMoves.getValidPositions(this, FieldValue.WHITE).size() + PossibleMoves.getValidPositions(this, FieldValue.BLACK).size() == 0;
+        return getPossiblePositions(FieldValue.WHITE).size() + getPossiblePositions(FieldValue.BLACK).size() == 0;
     }
 
     public FieldValue getWinner() {
@@ -153,5 +174,33 @@ public class Board{
                position.row < 8 &&
                position.column < 8;
 
+    }
+
+    public static Board initialBoard(boolean blackTopLeft) {
+        Board board = new Board();
+
+        if(blackTopLeft) {
+            board = board.makeMove(new Move(3,3,FieldValue.BLACK));
+            board = board.makeMove(new Move(4,4,FieldValue.BLACK));
+            board = board.makeMove(new Move(3,4,FieldValue.WHITE));
+            board = board.makeMove(new Move(4,3,FieldValue.WHITE));
+        } else {
+            board = board.makeMove(new Move(3,3,FieldValue.WHITE));
+            board = board.makeMove(new Move(4,4,FieldValue.WHITE));
+            board = board.makeMove(new Move(3,4,FieldValue.BLACK));
+            board = board.makeMove(new Move(4,3,FieldValue.BLACK));
+        }
+        return board;
+    }
+
+    public int hashCode() {
+        return Arrays.hashCode(board);
+    }
+
+    public boolean equals(Object o) {
+        if(!(o instanceof Board)) {
+            return false;
+        }
+        return o.hashCode() == hashCode();
     }
 }

@@ -10,18 +10,22 @@ public class Window{
     private Frame frame = null;
     private Fields fields = null;
 
-    public Window() {
+    public Window(MonteCarlo mc) {
         frame = new Frame();
         frame.setSize(500,500);
 
 
-        fields = new Fields();
+        fields = new Fields(mc);
         frame.add(fields);
         frame.setVisible(true);
     }
 
     public void update(Board board) {
         fields.updateValues(board);
+        fields.repaint();
+    }
+
+    public void repaint() {
         fields.repaint();
     }
 
@@ -32,11 +36,15 @@ public class Window{
         while(newPosition == null) {
             newPosition = fields.consumeClick();
             try {
-                Thread.sleep(100);
+                Thread.sleep(300);
             } catch(InterruptedException e) {
 
             }
         }
         return newPosition;
+    }
+
+    public void hide() {
+        frame.setVisible(false);
     }
 }

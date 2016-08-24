@@ -10,12 +10,13 @@ import java.awt.*;
 public class Fields extends Canvas implements MouseListener{
     private FieldValue[][] values = null;
 
+    private MonteCarlo mtPainter = null;
     private int fieldWidth = 0;
     private int fieldHeight = 0;
 
     private Position lastClick = null;
 
-    public Fields() {
+    public Fields(MonteCarlo mtPainter) {
         super();
         setBackground(Color.GRAY);
 
@@ -27,6 +28,7 @@ public class Fields extends Canvas implements MouseListener{
         }
 
         addMouseListener(this);
+        this.mtPainter = mtPainter;
     }
 
     public void setSize(int width, int height) {
@@ -69,7 +71,17 @@ public class Fields extends Canvas implements MouseListener{
             }
         }
 
+        g.setColor(Color.GREEN);
+        for(int i = 0; i < 8; i++) {
+            g.drawLine(i * fieldWidth, 0, i * fieldWidth, getHeight());
+            g.drawLine(0, i * fieldHeight, getWidth(), i * fieldHeight);
+        }
 
+        if(mtPainter != null) {
+            mtPainter.paint(fieldWidth, fieldHeight, g);
+        }
+
+        Toolkit.getDefaultToolkit().sync();
     }
 
     public void acceptingClick() {
