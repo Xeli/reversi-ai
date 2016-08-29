@@ -15,13 +15,13 @@ public class App {
     public static void main(String[] args) {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
-        boolean aivsAi = false;
+        boolean vsAI = false;
         try {
             System.out.println("Play versus ai? (y/N)");
-            aivsAi = !br.readLine().equals("n");
+            vsAI = br.readLine().toLowerCase().equals("y");
         } catch (IOException e) {}
 
-        if(aivsAi) {
+        if(!vsAI) {
             Algorithm ai1 = new MonteCarloTreeSearch();
             Algorithm ai2 = new Minimax();
             Board board = Board.initialBoard(false);
