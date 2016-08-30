@@ -1,48 +1,88 @@
 package uucki.algorithm;
 
-import uucki.game.reversi.Board;
-import uucki.type.*;
-import uucki.heuristic.reversi.Basic;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class MonteCarloTreeSearch extends Algorithm {
+import uucki.game.reversi.Board;
+import uucki.heuristic.reversi.Basic;
+import uucki.type.FieldValue;
+import uucki.type.Move;
+import uucki.type.Position;
+
+public class MonteCarloTreeSearch extends Algorithm implements Runnable {
+
+    private static final long MAX_TIME = 1000 * 7;
+    private final static int THREADS = 4;
 
     private Board currentBoard = null;
     private FieldValue currentColor = null;
-    private int simulationCount = 0;
+    private AtomicInteger simulationCount = new AtomicInteger();
 
-    private static final long MAX_TIME = 1000 * 7;
-    private HashMap<Board, Node<Board>> nodesBlack = new HashMap<Board, Node<Board>>();
-    private HashMap<Board, Node<Board>> nodesWhite = new HashMap<Board, Node<Board>>();
+    private ConcurrentHashMap<Board, Node<Board>> nodesBlack = new ConcurrentHashMap<Board, Node<Board>>();
+    private ConcurrentHashMap<Board, Node<Board>> nodesWhite = new ConcurrentHashMap<Board, Node<Board>>();
+    private Node<Board> rootNode = null;
+    private long cutOffTime = 0;
 
     public Move run(Board board, FieldValue color) {
         long startingTime = System.currentTimeMillis();
+
+        cutOffTime = startingTime + MAX_TIME;
         currentBoard = board;
         currentColor = color;
-        Node<Board> currentNode = new Node<Board>(board, color);
+        rootNode = new Node<Board>(board, color);
 
-        while(System.currentTimeMillis() < startingTime + MAX_TIME) {
-            List<Node<Board>> nodes = new ArrayList<Node<Board>>();
-            nodes.add(currentNode);
-            selectAndExpand(nodes);
-            Node<Board> lastNode = nodes.get(nodes.size() - 1);
+        List<Position> positions = rootNode.item.getPossiblePositions(color);
+        if(positions.size() == 0) {
+            return null;
+        }
+        if(positions.size() == 1) {
+            return new Move(positions.get(0), color);
+        }
+
+
+        ExecutorService executor = Executors.newCachedThreadPool();
+        for(int i = 0; i < THREADS; i++) {
+            executor.execute(this);
+        }
+
+        try {
+            executor.awaitTermination(MAX_TIME * 2, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+
+        }
+
+        System.out.println(simulationCount);
+        currentBoard = null;
+        Move bestMove = getBestMove(rootNode);
+        nodesBlack.clear();
+        nodesWhite.clear();
+        return bestMove;
+    }
+
+    public void run() {
+        while(System.currentTimeMillis() < cutOffTime) {
+            List<Node<Board>> ancestors = new ArrayList<Node<Board>>();
+            ancestors.add(rootNode);
+            selectAndExpand(ancestors);
+            Node<Board> lastNode = ancestors.get(ancestors.size() - 1);
             FieldValue winner = simulate(lastNode);
             getNodes(lastNode.color).put(lastNode.item, lastNode);
-            double lambda = 0.5;
+            double lambda = 0;
             double heuristic = Basic.getValue(lastNode.item, FieldValue.WHITE);
             double whiteScore = (winner == FieldValue.WHITE ? 1 : 0) * (1-lambda) + (heuristic > 0 ? 1 : 0) * lambda;
             double blackScore = (winner == FieldValue.BLACK ? 1 : 0) * (1-lambda) + (heuristic > 0 ? 0 : 1) * lambda;
-            update(nodes, whiteScore, blackScore);
+            update(ancestors, whiteScore, blackScore);
         }
-        System.out.println(simulationCount);
-        currentBoard = null;
-        simulationCount = 0;
-        return getBestMove(currentNode);
     }
 
-    private HashMap<Board, Node<Board>> getNodes(FieldValue color) {
+    private ConcurrentHashMap<Board, Node<Board>> getNodes(FieldValue color) {
         if(color == FieldValue.BLACK) {
             return nodesBlack;
         } else {
@@ -52,56 +92,64 @@ public class MonteCarloTreeSearch extends Algorithm {
 
     private void selectAndExpand(List<Node<Board>> ancestors) {
         Node<Board> parent = ancestors.get(ancestors.size() - 1);
-        if(parent.item.isFinished()) {
-            return;
-        }
 
-        List<Position> positions = parent.item.getPossiblePositions(parent.color);
-        FieldValue opponentColor = parent.color == FieldValue.WHITE ? FieldValue.BLACK : FieldValue.WHITE;
-
-        List<Node<Board>> children = new ArrayList<Node<Board>>();
-        for(Position p : positions) {
-            Move move = new Move(p, parent.color);
-            Board b = parent.item.makeMove(move);
-            Node<Board> node = new Node<Board>(b, opponentColor);
-            if(getNodes(node.color).containsKey(node.item)) {
-                node = getNodes(node.color).get(node.item);
-                children.add(node);
-            } else {
-                //if it isn't in nodes, we have not visited this node yet.
-                //So we can use it.
-                ancestors.add(node);
+        synchronized(parent) {
+            if(parent.item.isFinished()) {
                 return;
             }
-        }
 
-        //at this point we have all the children in our list, so we pick one
-        Node<Board> child = null;
-        if(children.size() == 0) {
-            child = new Node<Board>(parent.item, opponentColor);
-            if(getNodes(child.color).containsKey(child.item)) {
-                child = getNodes(child.color).get(child.item);
-            } else {
-                ancestors.add(child);
-                return;
-            }
-        } else {
-            double logTotalPlays = children.stream().mapToDouble(c -> c.plays).reduce(0.0, (i, c) -> i + c);
-            child = children.get(0);
-            double oldScore = Double.NEGATIVE_INFINITY;
-            for(Node<Board> node : children) {
-                double T = node.plays;
-                double X = node.score / (double)node.plays;
-                double S = X * X;
-                double V = S - X + Math.sqrt((2 * logTotalPlays) / T);
-                double score    = X + Math.sqrt((logTotalPlays / T) * Math.min(0.25, V));
-                if(child == null || score > oldScore) {
-                    oldScore = score;
-                    child = node;
+            List<Position> positions = parent.item.getPossiblePositions(parent.color);
+            FieldValue opponentColor = parent.color == FieldValue.WHITE ? FieldValue.BLACK : FieldValue.WHITE;
+
+            List<Node<Board>> children = new ArrayList<Node<Board>>();
+            for(Position p : positions) {
+                Move move = new Move(p, parent.color);
+                Board b = parent.item.makeMove(move);
+                Node<Board> node = new Node<Board>(b, opponentColor);
+                if(getNodes(node.color).containsKey(node.item)) {
+                    node = getNodes(node.color).get(node.item);
+                    children.add(node);
+                } else {
+                    //if it isn't in nodes, we have not visited this node yet.
+                    //So we can use it.
+                    ancestors.add(node);
+                    return;
                 }
             }
+
+            //at this point we have all the children in our list, so we pick one
+            Node<Board> child = null;
+
+            //if there are no children, this means this player cannot make a move
+            //so per othello rules the other player can go
+            //this is represented by the same board as the parent, but for the opponent
+            if(children.size() == 0) {
+                child = new Node<Board>(parent.item, opponentColor);
+                if(getNodes(child.color).containsKey(child.item)) {
+                    child = getNodes(child.color).get(child.item);
+                } else {
+                    ancestors.add(child);
+                    return;
+                }
+            } else {
+                //there are one or more children, using uct to pick one
+                double logTotalPlays = children.stream().mapToDouble(c -> c.plays).reduce(0.0, (i, c) -> i + c);
+                child = children.get(0);
+                double oldScore = Double.NEGATIVE_INFINITY;
+                for(Node<Board> node : children) {
+                    double T = node.plays;
+                    double X = node.score / (double)node.plays;
+                    double S = X * X;
+                    double V = S - X + Math.sqrt((2 * logTotalPlays) / T);
+                    double score    = X + Math.sqrt((logTotalPlays / T) * Math.min(0.25, V));
+                    if(child == null || score > oldScore) {
+                        oldScore = score;
+                        child = node;
+                    }
+                }
+            }
+            ancestors.add(child);
         }
-        ancestors.add(child);
         selectAndExpand(ancestors);
     }
 
@@ -116,17 +164,19 @@ public class MonteCarloTreeSearch extends Algorithm {
             }
             color = color.getOpponent();
         }
-        simulationCount++;
+        simulationCount.incrementAndGet();
         return board.getWinner();
     }
 
     private void update(List<Node<Board>> nodes, double whiteScore, double blackScore) {
         for(Node<Board> node : nodes) {
-            node.plays++;
-            if(node.color == FieldValue.WHITE) {
-                node.score += blackScore;
-            } else {
-                node.score += whiteScore;
+            synchronized(node) {
+                node.plays++;
+                if(node.color == FieldValue.WHITE) {
+                    node.score += blackScore;
+                } else {
+                    node.score += whiteScore;
+                }
             }
         }
     }
