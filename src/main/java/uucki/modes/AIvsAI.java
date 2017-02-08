@@ -4,6 +4,7 @@ import uucki.game.reversi.Board;
 import uucki.type.FieldValue;
 import uucki.type.Move;
 import uucki.algorithm.Algorithm;
+import uucki.graphics.reversi.Window;
 
 public class AIvsAI {
 
@@ -18,12 +19,17 @@ public class AIvsAI {
     }
 
     public Board game() {
+        Window window = new Window(null);
+        window.update(board);
+
         while(!board.isFinished()) {
+            window.update(board);
             Move move = ai1.run(board, FieldValue.WHITE);
             if(move != null) {
                 board = board.makeMove(move);
             }
 
+            window.update(board);
             //Computer move
             move = ai2.run(board, FieldValue.BLACK);
             if(move != null) {
