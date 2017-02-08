@@ -14,7 +14,7 @@ public class Minimax extends Algorithm {
         long startingTime = System.currentTimeMillis();
         Move bestMove = null;
         int depth = 1;
-        long cutOffTime = startingTime + 1000 * 2;
+        long cutOffTime = startingTime + 1000;
         System.out.println(board.emptyFields());
         while(!board.isFinished() && (System.currentTimeMillis() < cutOffTime || bestMove == null) && depth <= board.emptyFields()) {
             Result result = maxValue(depth++, board, color, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, cutOffTime);
