@@ -22,26 +22,19 @@ public class CreateData{
             return;
         }
 
-        for(int i = 0; i < 200000; i++) {
+        for(int i = 0; i < 20000000; i++) {
             Board b = Util.getRandomBoard();
             double scoreWhite = Basic.getValue(b, FieldValue.WHITE);
-            double scoreBlack = Basic.getValue(b, FieldValue.BLACK);
-            printData(out, b, scoreWhite, b.getPossiblePositions(FieldValue.WHITE), false);
-
-            printData(out, b, scoreBlack, b.getPossiblePositions(FieldValue.BLACK), true);
+            printData(out, b, scoreWhite, false);
         }
 
         out.close();
     }
 
-    public static void printData(PrintWriter out, Board b, double score, List<Position> possiblePositions, boolean swapColors) {
+    public static void printData(PrintWriter out, Board b, double score, boolean swapColors) {
         for(int x = 0; x < 8; x++) {
             for(int y = 0; y < 8; y++) {
                 Position position = new Position(x,y);
-                if(possiblePositions.contains(position)) {
-                    out.print("3,");
-                    continue;
-                }
                 FieldValue value = b.getFieldValue(position);
                 if(value == null) {
                     value = FieldValue.EMPTY;
@@ -54,7 +47,7 @@ public class CreateData{
                         out.print("0,");
                         break;
                     case BLACK:
-                        out.print("2,");
+                        out.print("-1,");
                         break;
                     case WHITE:
                         out.print("1,");
