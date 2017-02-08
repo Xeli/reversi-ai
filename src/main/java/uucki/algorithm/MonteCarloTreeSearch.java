@@ -19,7 +19,7 @@ import uucki.type.Position;
 public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
     private static final long MAX_TIME = 1000 * 7;
-    private final static int THREADS = 4;
+    private final static int THREADS = 1;
 
     private Board currentBoard = null;
     private FieldValue currentColor = null;
@@ -46,40 +46,43 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
             return new Move(positions.get(0), color);
         }
 
-
         ExecutorService executor = Executors.newCachedThreadPool();
         for(int i = 0; i < THREADS; i++) {
             executor.execute(this);
         }
 
         try {
-            executor.awaitTermination(MAX_TIME * 2, TimeUnit.MILLISECONDS);
+            Thread.sleep(MAX_TIME);
+            executor.shutdownNow();
+            executor.awaitTermination(MAX_TIME, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
 
         }
 
         System.out.println(simulationCount);
-        currentBoard = null;
         Move bestMove = getBestMove(rootNode);
-        nodesBlack.clear();
-        nodesWhite.clear();
+
+        cleanup();
         return bestMove;
     }
 
     public void run() {
+        int biggestDepth = 0;
         while(System.currentTimeMillis() < cutOffTime) {
             List<Node<Board>> ancestors = new ArrayList<Node<Board>>();
             ancestors.add(rootNode);
             selectAndExpand(ancestors);
+            biggestDepth = Math.max(biggestDepth, ancestors.size());
             Node<Board> lastNode = ancestors.get(ancestors.size() - 1);
             FieldValue winner = simulate(lastNode);
             getNodes(lastNode.color).put(lastNode.item, lastNode);
-            double lambda = 0;
             double heuristic = Basic.getValue(lastNode.item, FieldValue.WHITE);
+            double lambda = 0.25;
             double whiteScore = (winner == FieldValue.WHITE ? 1 : 0) * (1-lambda) + (heuristic > 0 ? 1 : 0) * lambda;
             double blackScore = (winner == FieldValue.BLACK ? 1 : 0) * (1-lambda) + (heuristic > 0 ? 0 : 1) * lambda;
-            update(ancestors, whiteScore, blackScore);
+            update(ancestors, blackScore, whiteScore);
         }
+        System.out.println("Depth: " + biggestDepth);
     }
 
     private ConcurrentHashMap<Board, Node<Board>> getNodes(FieldValue color) {
@@ -133,8 +136,7 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
                 }
             } else {
                 //there are one or more children, using uct to pick one
-                double logTotalPlays = children.stream().mapToDouble(c -> c.plays).reduce(0.0, (i, c) -> i + c);
-                child = children.get(0);
+                double logTotalPlays = Math.log(children.stream().mapToDouble(c -> c.plays).reduce(0.0, (i, c) -> i + c));
                 double oldScore = Double.NEGATIVE_INFINITY;
                 for(Node<Board> node : children) {
                     double T = node.plays;
@@ -173,9 +175,9 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
             synchronized(node) {
                 node.plays++;
                 if(node.color == FieldValue.WHITE) {
-                    node.score += blackScore;
-                } else {
                     node.score += whiteScore;
+                } else {
+                    node.score += blackScore;
                 }
             }
         }
@@ -218,7 +220,8 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
             Board board = node.item.makeMove(newMove);
             Node<Board> newNode = getNodes(node.color.getOpponent()).get(board);
-            double newScore = newNode.score/ (double)newNode.plays;
+            double newScore = (double)newNode.plays;
+            System.out.print(newMove);
             System.out.println(newScore + " " + newNode.score + " / " + newNode.plays);
             if(move == null || newScore >= score) {
                 score = newScore;
@@ -227,6 +230,13 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
         }
 
         return move;
+    }
+
+    public void cleanup() {
+        currentBoard = null;
+        nodesBlack.clear();
+        nodesWhite.clear();
+
     }
 
     class Node<T> {
