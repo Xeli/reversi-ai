@@ -36,6 +36,7 @@ public class AIvsAI {
                 board = board.makeMove(move);
             }
         }
+        window.hide();
         return board;
     }
 }
