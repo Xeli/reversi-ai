@@ -11,7 +11,7 @@
   <url>http://maven.apache.org</url>
 
   <properties>
-    <exec.mainClass>uucki.App</exec.mainClass>
+    <exec.mainClass>uucki.OptimizeParameter</exec.mainClass>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 

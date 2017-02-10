@@ -18,8 +18,8 @@ import uucki.type.Position;
 
 public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
-    private static final long MAX_TIME = 1000 * 7;
-    private final static int THREADS = 1;
+    private static final long MAX_TIME = 500 * 1;
+    private final static int THREADS = 4;
 
     private Board currentBoard = null;
     private FieldValue currentColor = null;
@@ -29,6 +29,16 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
     private ConcurrentHashMap<Board, Node<Board>> nodesWhite = new ConcurrentHashMap<Board, Node<Board>>();
     private Node<Board> rootNode = null;
     private long cutOffTime = 0;
+
+    private double c = 0;
+
+    public MonteCarloTreeSearch() {
+
+    }
+
+    public MonteCarloTreeSearch(double c) {
+        this.c = c;
+    }
 
     public Move run(Board board, FieldValue color) {
         long startingTime = System.currentTimeMillis();
@@ -59,7 +69,7 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
         }
 
-        System.out.println(simulationCount);
+        //System.out.println(simulationCount);
         Move bestMove = getBestMove(rootNode);
 
         cleanup();
@@ -82,7 +92,7 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
             double blackScore = (winner == FieldValue.BLACK ? 1 : 0) * (1-lambda) + (heuristic > 0 ? 0 : 1) * lambda;
             update(ancestors, blackScore, whiteScore);
         }
-        System.out.println("Depth: " + biggestDepth);
+        //System.out.println("Depth: " + biggestDepth);
     }
 
     private ConcurrentHashMap<Board, Node<Board>> getNodes(FieldValue color) {
@@ -143,7 +153,7 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
                     double X = node.score / (double)node.plays;
                     double S = X * X;
                     double V = S - X + Math.sqrt((2 * logTotalPlays) / T);
-                    double score    = X + Math.sqrt((logTotalPlays / T) * Math.min(0.25, V));
+                    double score    = X + 2 * this.c * Math.sqrt(logTotalPlays / T);
                     if(child == null || score > oldScore) {
                         oldScore = score;
                         child = node;
@@ -221,8 +231,8 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
             Board board = node.item.makeMove(newMove);
             Node<Board> newNode = getNodes(node.color.getOpponent()).get(board);
             double newScore = (double)newNode.plays;
-            System.out.print(newMove);
-            System.out.println(newScore + " " + newNode.score + " / " + newNode.plays);
+            //System.out.print(newMove);
+            //System.out.println(newScore + " " + newNode.score + " / " + newNode.plays);
             if(move == null || newScore >= score) {
                 score = newScore;
                 move = newMove;
