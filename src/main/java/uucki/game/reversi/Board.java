@@ -15,6 +15,17 @@ public class Board{
     private List<Position> possibleWhitePositions = null;
     private List<Position> possibleBlackPositions = null;
 
+    public static double[][] weights = new double[][]{
+        new double[]{ 6.21,  1.88,  12.4,  0.37,  0.37, 12.40,  1.88, 6.21 },
+        new double[]{ 1.88, -1.00, -5.45, -1.40, -1.40, -5.45, -1.00, 1.88 },
+        new double[]{ 12.4, -5.45,  0.03,  0.07,  0.07,  0.03, -5.45, 12.4 },
+        new double[]{ 0.37, -1.40,  0.07, -1.32, -1.32,  0.07, -1.40, 0.37 },
+        new double[]{ 0.37, -1.40,  0.07, -1.32, -1.32,  0.07, -1.40, 0.37 },
+        new double[]{ 12.4, -5.45,  0.03,  0.07,  0.07,  0.03, -5.45, 12.4 },
+        new double[]{ 1.88, -1.00, -5.45, -1.40, -1.40, -5.45, -1.00, 1.88 },
+        new double[]{ 6.21,  1.88,  12.4,  0.37,  0.37, 12.40,  1.88, 6.21 },
+    };
+
     public Board makeMove(Move move) {
         Board newBoard = (Board)clone();
         Position position = new Position(move);
@@ -191,6 +202,10 @@ public class Board{
             board = board.makeMove(new Move(4,3,FieldValue.BLACK));
         }
         return board;
+    }
+
+    public static double getWeight(Position position) {
+        return weights[position.row][position.column] + 5.45;
     }
 
     public int hashCode() {
