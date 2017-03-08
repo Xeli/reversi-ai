@@ -31,13 +31,17 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
     private long cutOffTime = 0;
 
     private double c = 0;
+    private boolean weightedSimulation = false;
+    private boolean tuned = false;
 
     public MonteCarloTreeSearch() {
 
     }
 
-    public MonteCarloTreeSearch(double c) {
+    public MonteCarloTreeSearch(double c, boolean weightedSimulation, boolean tuned) {
         this.c = c;
+        this.weightedSimulation = weightedSimulation;
+        this.tuned = tuned;
     }
 
     public Move run(Board board, FieldValue color) {
@@ -84,7 +88,7 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
             selectAndExpand(ancestors);
             biggestDepth = Math.max(biggestDepth, ancestors.size());
             Node<Board> lastNode = ancestors.get(ancestors.size() - 1);
-            FieldValue winner = simulate(lastNode);
+            FieldValue winner = simulate(lastNode, weightedSimulation);
             getNodes(lastNode.color).put(lastNode.item, lastNode);
             double heuristic = Basic.getValue(lastNode.item, FieldValue.WHITE);
             double lambda = 0.25;
@@ -146,7 +150,10 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
                 }
             } else {
                 //there are one or more children, using uct to pick one
-                double logTotalPlays = Math.log(children.stream().mapToDouble(c -> c.plays).reduce(0.0, (i, c) -> i + c));
+
+                //get plays from all children and sum them
+                double totalPlays = children.stream().mapToDouble(c -> c.plays).reduce(0.0, (i, c) -> i + c);
+                double logTotalPlays = Math.log(totalPlays);
                 double oldScore = Double.NEGATIVE_INFINITY;
                 for(Node<Board> node : children) {
                     double T = node.plays;
@@ -165,19 +172,44 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
         selectAndExpand(ancestors);
     }
 
-    private FieldValue simulate(Node<Board> node) {
+    private FieldValue simulate(Node<Board> node, boolean weighted) {
         Board board = node.item;
         FieldValue color = node.color;
         while(!board.isFinished()) {
-            List<Position> positions = board.getPossiblePositions(color);
-            if(positions.size() > 0) {
-                Position randomPosition = positions.get(ThreadLocalRandom.current().nextInt(positions.size()));
-                board = board.makeMove(new Move(randomPosition, color));
-            }
+            board = makeRandomMove(board, color, weighted);
             color = color.getOpponent();
         }
         simulationCount.incrementAndGet();
         return board.getWinner();
+    }
+
+    private Board makeRandomMove(Board board, FieldValue color, boolean weighted) {
+        List<Position> positions = board.getPossiblePositions(color);
+        if (positions.size() == 0) {
+            return board;
+        }
+
+
+        Position randomPosition = null;
+        if(weighted) {
+            double sumWeights = positions.stream().mapToDouble(p -> board.getWeight(p)).sum();
+            double random = ThreadLocalRandom.current().nextDouble() * sumWeights;
+
+            double edge = 0;
+            for(Position p : positions) {
+                edge += board.getWeight(p);
+                if(random <= edge) {
+                    randomPosition = p;
+                    break;
+                }
+            }
+            if(randomPosition == null) {
+                randomPosition = positions.get(positions.size()-1);
+            }
+        } else {
+            randomPosition = positions.get(ThreadLocalRandom.current().nextInt(positions.size()));
+        }
+        return board.makeMove(new Move(randomPosition, color));
     }
 
     private void update(List<Node<Board>> nodes, double whiteScore, double blackScore) {
