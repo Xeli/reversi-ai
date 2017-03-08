@@ -46,5 +46,6 @@ public class Window{
 
     public void hide() {
         frame.setVisible(false);
+        frame.dispose();
     }
 }
