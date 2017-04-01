@@ -150,7 +150,7 @@ public class OptimizeParameter {
         Algorithm ai1 = new MonteCarloTreeSearch(value1, true, false);
         Algorithm ai2 = new MonteCarloTreeSearch(value2, true, false);
         Board board = Board.initialBoard(false);
-        AIvsAI mode = new AIvsAI(board, ai1, ai2);
+        AIvsAI mode = new AIvsAI(board, ai1, ai2, false);
         board = mode.game();
         if(board.getWinner() == FieldValue.WHITE) {
             return value1;
