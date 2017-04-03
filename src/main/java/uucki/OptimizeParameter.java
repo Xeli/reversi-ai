@@ -14,14 +14,18 @@ import java.util.*;
 
 public class OptimizeParameter {
 
-    public final static int POPULATION_LIMIT = 1;
-    public final static int GENERATIONS = 1;
+    public final static int POPULATION_LIMIT = 5;
+    public final static int GENERATIONS = 150;
     public static Random random;
 
     public static void main(String[] args) {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         random = new Random();
 
+        findBestC(br);
+    }
+
+    private static void rankPopulation() {
         List<Double> population = new ArrayList<Double>();
         population.add(0.25);
         population.add(0.75);
@@ -30,10 +34,7 @@ public class OptimizeParameter {
         population.add(1.5);
         population.add(1.75);
         population.add(2.0);
-        rankPopulation(population);
-    }
 
-    private static void rankPopulation(List<Double> population) {
         HashMap<Double, Integer> score = new HashMap<Double, Integer>(population.size());
         for(Double c : population) {
             for(int round = 0; round < 10; round++) {
@@ -48,10 +49,10 @@ public class OptimizeParameter {
                     score.put(winner, currentScore+1);
                 }
             }
-        }
 
-        for(Map.Entry<Double, Integer> entry : score.entrySet()) {
-            System.out.println(entry.getKey() + ": " + entry.getValue());
+            for(Map.Entry<Double, Integer> entry : score.entrySet()) {
+                System.out.println(entry.getKey() + ": " + entry.getValue());
+            }
         }
     }
 
@@ -68,49 +69,107 @@ public class OptimizeParameter {
             return;
         }
 
-        List<Double> population = new ArrayList<Double>(POPULATION_LIMIT);
-
-        for(int i = 0; i < POPULATION_LIMIT; i++) {
+        //initial population
+        List<Genome> population = new ArrayList<Genome>(POPULATION_LIMIT);
+        while(population.size() < POPULATION_LIMIT) {
             double value = random.nextDouble() * (highEnd - lowEnd) + lowEnd;
-            population.add(value);
+            Genome g = new Genome(0, value);
+            evaluate(g);
+            population.add(g);
         }
 
         for(int i = 0; i < GENERATIONS; i++) {
+            //print some intermediate stats
             double mean = mean(population);
             double variance = variance(population);
-            System.out.println(i + "," + mean + "," + variance);
-            population = grow(population, variance);
-            population = tournament(population);
+            int fitnessSum = population.stream().mapToInt(x -> x.fitness).sum();
+            int wins = fitnessSum - population.size() / 3;
+            System.out.println(i + "," + mean + "," + variance + "," + wins);
+
+            //build the new children population
+            List<Genome> children = new ArrayList<Genome>(POPULATION_LIMIT);
+            while(children.size() < POPULATION_LIMIT) {
+                Genome parent1 = selectGenome(population);
+                Genome parent2 = selectGenome(population);
+
+                Genome child1 = crossOver(parent1, parent2);
+                Genome child2 = mutate(child1);
+
+                evaluate(child1);
+                evaluate(child2);
+                children.add(child1);
+                children.add(child2);
+            }
+
+            //new population
+            List<Genome> newPopulation = new ArrayList<Genome>(POPULATION_LIMIT);
+
+            //add 25% of the parents
+            int parentsToAdd = (int)Math.round(POPULATION_LIMIT * 0.25);
+            while(newPopulation.size() < parentsToAdd) {
+                newPopulation.add(selectGenome(population));
+            }
+
+            //fill the other 75% with children
+            while(newPopulation.size() < POPULATION_LIMIT) {
+                newPopulation.add(selectGenome(children));
+            }
+
+            //swap populations
+            population = newPopulation;
         }
     }
 
-    private static double mean(List<Double> list) {
-        return list.stream().mapToDouble(a -> a).average().getAsDouble();
+    private static Genome selectGenome(List<Genome> population) {
+        int fitnessSum = population.stream().mapToInt(i -> i.fitness).sum();
+        double edge = random.nextDouble() * fitnessSum;
+
+        int currentEdge = 0;
+        for(Genome g : population) {
+            currentEdge += g.fitness;
+            if(edge <= currentEdge) {
+                return g;
+            }
+        }
+        return population.get(1);
     }
 
-    private static double variance(List<Double> list) {
+    private static Genome mutate(Genome g) {
+        double range = 0.125;
+        return new Genome(0, random.nextGaussian() * range + g.cValue);
+    }
+
+    private static Genome crossOver(Genome g1, Genome g2) {
+        double newCValue = (g1.cValue + g2.cValue) * 0.5;
+        return new Genome(0, newCValue);
+    }
+
+
+    private static double mean(List<Genome> list) {
+        return list.stream().mapToDouble(a -> a.cValue).average().getAsDouble();
+    }
+
+    private static double variance(List<Genome> list) {
         double mean = mean(list);
-        return list.stream().mapToDouble(a -> Math.abs(mean - a)).sum() / list.size();
+        return list.stream().mapToDouble(a -> Math.abs(mean - a.cValue)).sum() / list.size();
     }
 
-    public static List<Double> grow(List<Double> population, double variance) {
-        List<Double> newPopulation = new ArrayList<Double>(population);
-        population.stream().map(d -> mutate(d, variance)).forEach(d -> newPopulation.add(d));
-        return newPopulation;
-    }
-
-    private static double mutate(double value, double variance) {
-        double range = variance;
-        return random.nextGaussian() * range + value;
+    public static void evaluate(Genome g) {
+        double winner = runGame(g.cValue, 0.25);
+        if(winner == g.cValue) {
+            g.fitness = 3;
+        } else {
+            g.fitness = 1;
+        }
     }
 
     public static List<Double> tournament(List<Double> population) {
         List<Double> newPopulation = new ArrayList<Double>(POPULATION_LIMIT);
 
-        while(population.size() >= 2) {
+        while(population.size() > 0) {
             Double value1 = anyItem(population);
-            Double value2 = anyItem(population);
-            newPopulation.add(runGame(value1, value2));
+            double winner = runGame(value1, 0.25);
+            newPopulation.add(winner);
         }
 
         return newPopulation;
@@ -157,5 +216,15 @@ public class OptimizeParameter {
         } else {
             return value2;
         }
+    }
+
+}
+class Genome {
+    int fitness = 1;
+    double cValue = 1;
+
+    public Genome(int fitness, double cValue) {
+        this.fitness = fitness;
+        this.cValue = cValue;
     }
 }
