@@ -45,9 +45,6 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
     }
 
     public Move run(Board board, FieldValue color) {
-        long startingTime = System.currentTimeMillis();
-
-        cutOffTime = startingTime + MAX_TIME;
         currentBoard = board;
         currentColor = color;
         rootNode = new Node<Board>(board, color);
@@ -61,6 +58,10 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
         }
 
         ExecutorService executor = Executors.newCachedThreadPool();
+
+        long startingTime = System.currentTimeMillis();
+        cutOffTime = startingTime + MAX_TIME;
+
         for(int i = 0; i < THREADS; i++) {
             executor.execute(this);
         }
