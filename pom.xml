@@ -11,7 +11,7 @@
   <url>http://maven.apache.org</url>
 
   <properties>
-    <exec.mainClass>uucki.OptimizeParameter</exec.mainClass>
+    <exec.mainClass>uucki.AnalyseSingleMove</exec.mainClass>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -54,7 +54,7 @@
               <configuration>
                   <archive>
                       <manifest>
-                          <mainClass>uucki.OptimizeParameter</mainClass>
+                          <mainClass>uucki.AnalyseSingleMove</mainClass>
                       </manifest>
                   </archive>
               </configuration>
