@@ -156,18 +156,14 @@ public class Board{
         for(int column = 0; column < 8; column++) {
             System.out.print(column);
         }
-        System.out.println("=");
         for(int i = 0; i < board.length; i++) {
             if(i % 8 == 0) {
-                System.out.print("=");
+                System.out.print("=\n=");
             }
 
             System.out.print(board[i] == null ? " " : board[i]);
-
-            if(i % 8 == 0) {
-                System.out.println("=");
-            }
         }
+        System.out.println("=");
         System.out.println(new String(new char[10]).replace("\0", "="));
     }
 
