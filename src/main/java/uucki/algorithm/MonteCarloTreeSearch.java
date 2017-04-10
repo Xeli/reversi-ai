@@ -18,8 +18,8 @@ import uucki.type.Position;
 
 public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
-    private static final long MAX_TIME = 500 * 1;
-    private final static int THREADS = 4;
+    private static final long MAX_TIME = 250 * 1;
+    private final static int THREADS = 1;
 
     private Board currentBoard = null;
     private FieldValue currentColor = null;
@@ -27,24 +27,36 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
     private ConcurrentHashMap<Board, Node<Board>> nodesBlack = new ConcurrentHashMap<Board, Node<Board>>();
     private ConcurrentHashMap<Board, Node<Board>> nodesWhite = new ConcurrentHashMap<Board, Node<Board>>();
-    private Node<Board> rootNode = null;
+    public Node<Board> rootNode = null;
     private long cutOffTime = 0;
 
     private double c = 0;
     private boolean weightedSimulation = false;
     private boolean tuned = false;
 
+    private int simulations = 0;
+    private ExecutorService executor = null;
+
     public MonteCarloTreeSearch() {
 
     }
 
     public MonteCarloTreeSearch(double c, boolean weightedSimulation, boolean tuned) {
+        this(c, weightedSimulation, tuned, Executors.newCachedThreadPool());
+    }
+
+    public MonteCarloTreeSearch(double c, boolean weightedSimulation, boolean tuned, ExecutorService executor) {
         this.c = c;
         this.weightedSimulation = weightedSimulation;
         this.tuned = tuned;
+        this.executor = executor;
     }
 
     public Move run(Board board, FieldValue color) {
+        return run(board, color, true);
+    }
+
+    public Move run(Board board, FieldValue color, boolean cleanup) {
         currentBoard = board;
         currentColor = color;
         rootNode = new Node<Board>(board, color);
@@ -57,8 +69,6 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
             return new Move(positions.get(0), color);
         }
 
-        ExecutorService executor = Executors.newCachedThreadPool();
-
         long startingTime = System.currentTimeMillis();
         cutOffTime = startingTime + MAX_TIME;
 
@@ -68,7 +78,7 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
         try {
             Thread.sleep(MAX_TIME);
-            executor.shutdownNow();
+            //executor.shutdownNow();
             executor.awaitTermination(MAX_TIME, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
 
@@ -77,12 +87,16 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
         //System.out.println(simulationCount);
         Move bestMove = getBestMove(rootNode);
 
-        cleanup();
+        if(cleanup) {
+            cleanup();
+        }
+        System.out.println(simulations);
         return bestMove;
     }
 
     public void run() {
         int biggestDepth = 0;
+        int simulations = 0;
         while(System.currentTimeMillis() < cutOffTime) {
             List<Node<Board>> ancestors = new ArrayList<Node<Board>>();
             ancestors.add(rootNode);
@@ -96,8 +110,11 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
             double whiteScore = (winner == FieldValue.WHITE ? 1 : 0) * (1-lambda) + (heuristic > 0 ? 1 : 0) * lambda;
             double blackScore = (winner == FieldValue.BLACK ? 1 : 0) * (1-lambda) + (heuristic > 0 ? 0 : 1) * lambda;
             update(ancestors, blackScore, whiteScore);
+            simulations++;
         }
-        //System.out.println("Depth: " + biggestDepth);
+        synchronized(this) {
+            this.simulations += simulations;
+        }
     }
 
     private ConcurrentHashMap<Board, Node<Board>> getNodes(FieldValue color) {
@@ -111,65 +128,63 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
     private void selectAndExpand(List<Node<Board>> ancestors) {
         Node<Board> parent = ancestors.get(ancestors.size() - 1);
 
-        synchronized(parent) {
-            if(parent.item.isFinished()) {
+        if(parent.item.isFinished()) {
+            return;
+        }
+
+        List<Position> positions = parent.item.getPossiblePositions(parent.color);
+        FieldValue opponentColor = parent.color == FieldValue.WHITE ? FieldValue.BLACK : FieldValue.WHITE;
+
+        List<Node<Board>> children = new ArrayList<Node<Board>>();
+        for(Position p : positions) {
+            Move move = new Move(p, parent.color);
+            Board b = parent.item.makeMove(move);
+            Node<Board> node = new Node<Board>(b, opponentColor);
+            if(getNodes(node.color).containsKey(node.item)) {
+                node = getNodes(node.color).get(node.item);
+                children.add(node);
+            } else {
+                //if it isn't in nodes, we have not visited this node yet.
+                //So we can use it.
+                ancestors.add(node);
                 return;
             }
-
-            List<Position> positions = parent.item.getPossiblePositions(parent.color);
-            FieldValue opponentColor = parent.color == FieldValue.WHITE ? FieldValue.BLACK : FieldValue.WHITE;
-
-            List<Node<Board>> children = new ArrayList<Node<Board>>();
-            for(Position p : positions) {
-                Move move = new Move(p, parent.color);
-                Board b = parent.item.makeMove(move);
-                Node<Board> node = new Node<Board>(b, opponentColor);
-                if(getNodes(node.color).containsKey(node.item)) {
-                    node = getNodes(node.color).get(node.item);
-                    children.add(node);
-                } else {
-                    //if it isn't in nodes, we have not visited this node yet.
-                    //So we can use it.
-                    ancestors.add(node);
-                    return;
-                }
-            }
-
-            //at this point we have all the children in our list, so we pick one
-            Node<Board> child = null;
-
-            //if there are no children, this means this player cannot make a move
-            //so per othello rules the other player can go
-            //this is represented by the same board as the parent, but for the opponent
-            if(children.size() == 0) {
-                child = new Node<Board>(parent.item, opponentColor);
-                if(getNodes(child.color).containsKey(child.item)) {
-                    child = getNodes(child.color).get(child.item);
-                } else {
-                    ancestors.add(child);
-                    return;
-                }
-            } else {
-                //there are one or more children, using uct to pick one
-
-                //get plays from all children and sum them
-                double totalPlays = children.stream().mapToDouble(c -> c.plays).reduce(0.0, (i, c) -> i + c);
-                double logTotalPlays = Math.log(totalPlays);
-                double oldScore = Double.NEGATIVE_INFINITY;
-                for(Node<Board> node : children) {
-                    double T = node.plays;
-                    double X = node.score / (double)node.plays;
-                    double S = X * X;
-                    double V = S - X + Math.sqrt((2 * logTotalPlays) / T);
-                    double score    = X + 2 * this.c * Math.sqrt(logTotalPlays / T);
-                    if(child == null || score > oldScore) {
-                        oldScore = score;
-                        child = node;
-                    }
-                }
-            }
-            ancestors.add(child);
         }
+
+        //at this point we have all the children in our list, so we pick one
+        Node<Board> child = null;
+
+        //if there are no children, this means this player cannot make a move
+        //so per othello rules the other player can go
+        //this is represented by the same board as the parent, but for the opponent
+        if(children.size() == 0) {
+            child = new Node<Board>(parent.item, opponentColor);
+            if(getNodes(child.color).containsKey(child.item)) {
+                child = getNodes(child.color).get(child.item);
+            } else {
+                ancestors.add(child);
+                return;
+            }
+        } else {
+            //there are one or more children, using uct to pick one
+
+            //get plays from all children and sum them
+            double totalPlays = children.stream().mapToDouble(c -> c.plays).reduce(0.0, (i, c) -> i + c);
+            double logTotalPlays = Math.log(totalPlays);
+            double oldScore = Double.NEGATIVE_INFINITY;
+            for(Node<Board> node : children) {
+                double T = node.plays;
+                double X = node.score / (double)node.plays;
+                double S = X * X;
+                double V = S - X + Math.sqrt((2 * logTotalPlays) / T);
+                double score    = X + 2 * this.c * Math.sqrt(logTotalPlays / T);
+                if(child == null || score > oldScore) {
+                    oldScore = score;
+                    child = node;
+                }
+            }
+        }
+        ancestors.add(child);
         selectAndExpand(ancestors);
     }
 
@@ -263,8 +278,7 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
             Board board = node.item.makeMove(newMove);
             Node<Board> newNode = getNodes(node.color.getOpponent()).get(board);
-            double newScore = (double)newNode.plays;
-            //System.out.print(newMove);
+            double newScore = (double)newNode.score / (double)newNode.plays;
             //System.out.println(newScore + " " + newNode.score + " / " + newNode.plays);
             if(move == null || newScore >= score) {
                 score = newScore;
@@ -275,6 +289,22 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
         return move;
     }
 
+    public List<Node<Board>> getChildren(Node<Board> root) {
+        List<Position> positions = root.item.getPossiblePositions(root.color);
+        FieldValue opponentColor = root.color == FieldValue.WHITE ? FieldValue.BLACK : FieldValue.WHITE;
+        List<Node<Board>> children = new ArrayList<Node<Board>>();
+        for(Position p : positions) {
+            Move move = new Move(p, root.color);
+            Board b = root.item.makeMove(move);
+            Node<Board> node = new Node<Board>(b, opponentColor);
+            if(getNodes(node.color).containsKey(node.item)) {
+                node = getNodes(node.color).get(node.item);
+                children.add(node);
+            }
+        }
+        return children;
+    }
+
     public void cleanup() {
         currentBoard = null;
         nodesBlack.clear();
@@ -282,9 +312,9 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
     }
 
-    class Node<T> {
-        public int score = 0;
-        public int plays = 0;
+    public class Node<T> {
+        public volatile int score = 0;
+        public volatile int plays = 0;
         public T item = null;
         public FieldValue color = null;
 

@@ -14,7 +14,7 @@ import java.util.*;
 
 public class OptimizeParameter {
 
-    public final static int POPULATION_LIMIT = 5;
+    public final static int POPULATION_LIMIT = 10;
     public final static int GENERATIONS = 150;
     public static Random random;
 
@@ -22,52 +22,101 @@ public class OptimizeParameter {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         random = new Random();
 
-        findBestC(br);
+        try {
+            rankPopulation();
+        } catch (IOException e) {
+
+        }
     }
 
-    private static void rankPopulation() {
+    private static void rankPopulation() throws IOException {
         List<Double> population = new ArrayList<Double>();
-        population.add(0.25);
-        population.add(0.75);
+        population.add(0.0);
+        population.add(0.1);
+        population.add(0.2);
+        population.add(0.3);
+        population.add(0.4);
+        population.add(0.5);
+        population.add(0.6);
+        population.add(0.7);
+        population.add(0.8);
+        population.add(0.9);
         population.add(1.0);
-        population.add(1.25);
-        population.add(1.5);
-        population.add(1.75);
-        population.add(2.0);
+        population.add(3.0);
+        population.add(5.0);
 
-        HashMap<Double, Integer> score = new HashMap<Double, Integer>(population.size());
+        SortedMap<Double, Map<Double, Integer>> resultMatrix = new TreeMap<Double, Map<Double, Integer>>();
+
+        //build up the hashmap resultmatrix
+        for(Double current : population) {
+            TreeMap<Double, Integer> results = new TreeMap<Double, Integer>();
+            for(Double opponent : population) {
+                results.put(opponent, 0);
+            }
+            resultMatrix.put(current, results);
+        }
+
+        TreeMap<Double, Integer> score = new TreeMap<Double, Integer>();
+
+        BufferedWriter result = new BufferedWriter(new FileWriter("result.csv"));
+        BufferedWriter matrix = new BufferedWriter(new FileWriter("matrix.csv"));
+        int gamesPlayed = 0;
         for(Double c : population) {
             for(int round = 0; round < 10; round++) {
-
                 for(Double opponent : population) {
-                    if (opponent == c) {
+                    if(c == opponent) {
                         continue;
                     }
-
                     double winner = runGame(c, opponent);
+
                     int currentScore = score.getOrDefault(winner, 0);
                     score.put(winner, currentScore+1);
+
+                    if(winner == c) {
+                        int currentWins = resultMatrix.get(c).get(opponent);
+                        resultMatrix.get(c).put(opponent, currentWins+1);
+                    } else {
+                        int currentWins = resultMatrix.get(opponent).get(c);
+                        resultMatrix.get(opponent).put(c, currentWins+1);
+                    }
+                    gamesPlayed++;
+                    System.out.println("Played: " + gamesPlayed);
                 }
             }
 
+            result.write("=============new================");
+            result.newLine();
             for(Map.Entry<Double, Integer> entry : score.entrySet()) {
-                System.out.println(entry.getKey() + ": " + entry.getValue());
+                result.write(entry.getKey() + ", " + entry.getValue());
+                result.newLine();
             }
+
+            matrix.write("=============new================");
+            matrix.newLine();
+            for(Map.Entry<Double, Map<Double, Integer>> entry : resultMatrix.entrySet()) {
+                matrix.write("," + entry.getKey());
+            }
+            matrix.newLine();
+            for(Map.Entry<Double, Map<Double, Integer>> entry : resultMatrix.entrySet()) {
+                matrix.write(String.valueOf(entry.getKey()));
+                for(Map.Entry<Double, Integer> winsEntry : entry.getValue().entrySet()) {
+                    matrix.write(", " + winsEntry.getValue());
+                }
+                matrix.newLine();
+            }
+            result.flush();
+            matrix.flush();
         }
+
+        result.flush();
+        matrix.flush();
+        result.close();
+        matrix.close();
     }
 
     private static void findBestC(BufferedReader br) {
-        double lowEnd = 0.0;
-        double highEnd = 10.0;
-        try {
-            System.out.println("Low end number to search");
-            lowEnd = Double.parseDouble(br.readLine());
-            System.out.println("high end number to search");
-            highEnd = Double.parseDouble(br.readLine());
-        } catch (IOException e) {
-            System.out.println("IO error");
-            return;
-        }
+        double lowEnd = 0.2;
+        double highEnd = 0.6;
 
         //initial population
         List<Genome> population = new ArrayList<Genome>(POPULATION_LIMIT);
@@ -93,7 +142,8 @@ public class OptimizeParameter {
                 Genome parent2 = selectGenome(population);
 
                 Genome child1 = crossOver(parent1, parent2);
-                Genome child2 = mutate(child1);
+                Genome child2 = new Genome(child1);
+                child2.mutate(random);
 
                 evaluate(child1);
                 evaluate(child2);
@@ -157,7 +207,7 @@ public class OptimizeParameter {
     public static void evaluate(Genome g) {
         double winner = runGame(g.cValue, 0.25);
         if(winner == g.cValue) {
-            g.fitness = 3;
+            g.fitness = 10;
         } else {
             g.fitness = 1;
         }
@@ -206,8 +256,8 @@ public class OptimizeParameter {
     }
 
     public static double runSingleGame(double value1, double value2) {
-        Algorithm ai1 = new MonteCarloTreeSearch(value1, true, false);
-        Algorithm ai2 = new MonteCarloTreeSearch(value2, true, false);
+        Algorithm ai1 = new MonteCarloTreeSearch(value1, false, false);
+        Algorithm ai2 = new MonteCarloTreeSearch(value2, false, false);
         Board board = Board.initialBoard(false);
         AIvsAI mode = new AIvsAI(board, ai1, ai2, false);
         board = mode.game();
@@ -223,8 +273,25 @@ class Genome {
     int fitness = 1;
     double cValue = 1;
 
+    int n = 0;
+    double variance = 1;
+
     public Genome(int fitness, double cValue) {
         this.fitness = fitness;
         this.cValue = cValue;
+    }
+
+    public Genome(Genome g) {
+        this.fitness = g.fitness;
+        this.cValue = g.cValue;
+        this.n = 0;
+        this.variance = g.variance;
+    }
+
+    public void mutate(Random random) {
+        n++;
+        double randomNumber = random.nextGaussian();
+        variance = variance * Math.exp(randomNumber / Math.sqrt(n));
+        cValue = cValue + variance * random.nextGaussian();
     }
 }
