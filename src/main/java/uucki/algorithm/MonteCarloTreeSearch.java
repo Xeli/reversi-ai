@@ -15,11 +15,12 @@ import uucki.heuristic.reversi.Basic;
 import uucki.type.FieldValue;
 import uucki.type.Move;
 import uucki.type.Position;
+import uucki.type.Node;
 
 public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
-    private static final long MAX_TIME = 250 * 1;
-    private final static int THREADS = 1;
+    private static final long MAX_TIME = 500 * 1;
+    private final static int THREADS = 4;
 
     private Board currentBoard = null;
     private FieldValue currentColor = null;
@@ -84,13 +85,11 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
         }
 
-        //System.out.println(simulationCount);
         Move bestMove = getBestMove(rootNode);
 
         if(cleanup) {
             cleanup();
         }
-        System.out.println(simulations);
         return bestMove;
     }
 
@@ -117,7 +116,7 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
         }
     }
 
-    private ConcurrentHashMap<Board, Node<Board>> getNodes(FieldValue color) {
+    public ConcurrentHashMap<Board, Node<Board>> getNodes(FieldValue color) {
         if(color == FieldValue.BLACK) {
             return nodesBlack;
         } else {
@@ -279,7 +278,6 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
             Board board = node.item.makeMove(newMove);
             Node<Board> newNode = getNodes(node.color.getOpponent()).get(board);
             double newScore = (double)newNode.score / (double)newNode.plays;
-            //System.out.println(newScore + " " + newNode.score + " / " + newNode.plays);
             if(move == null || newScore >= score) {
                 score = newScore;
                 move = newMove;
@@ -289,20 +287,14 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
         return move;
     }
 
-    public List<Node<Board>> getChildren(Node<Board> root) {
+    public boolean hasCornerMove(Node<Board> root) {
         List<Position> positions = root.item.getPossiblePositions(root.color);
-        FieldValue opponentColor = root.color == FieldValue.WHITE ? FieldValue.BLACK : FieldValue.WHITE;
-        List<Node<Board>> children = new ArrayList<Node<Board>>();
+
+        boolean hasCornerMove = false;
         for(Position p : positions) {
-            Move move = new Move(p, root.color);
-            Board b = root.item.makeMove(move);
-            Node<Board> node = new Node<Board>(b, opponentColor);
-            if(getNodes(node.color).containsKey(node.item)) {
-                node = getNodes(node.color).get(node.item);
-                children.add(node);
-            }
+            hasCornerMove |= p.isCorner();
         }
-        return children;
+        return hasCornerMove;
     }
 
     public void cleanup() {
@@ -310,17 +302,5 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
         nodesBlack.clear();
         nodesWhite.clear();
 
-    }
-
-    public class Node<T> {
-        public volatile int score = 0;
-        public volatile int plays = 0;
-        public T item = null;
-        public FieldValue color = null;
-
-        public Node(T item, FieldValue color) {
-            this.item = item;
-            this.color = color;
-        }
     }
 }
