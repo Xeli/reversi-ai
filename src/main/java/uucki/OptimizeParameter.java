@@ -67,7 +67,7 @@ public class OptimizeParameter {
                     if(c == opponent) {
                         continue;
                     }
-                    double winner = runGame(c, opponent);
+                    double winner = runSingleGame(c, opponent);
 
                     int currentScore = score.getOrDefault(winner, 0);
                     score.put(winner, currentScore+1);
