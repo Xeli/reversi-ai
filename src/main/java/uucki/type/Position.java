@@ -31,4 +31,11 @@ public class Position {
     public Object clone() {
         return new Position(row, column);
     }
+
+    public boolean isCorner() {
+        return (row == 0 && column == 0) ||
+               (row == 7 && column == 0) ||
+               (row == 0 && column == 7) ||
+               (row == 7 && column == 7);
+    }
 }
