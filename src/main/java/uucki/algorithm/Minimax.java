@@ -1,6 +1,6 @@
 package uucki.algorithm;
 
-import uucki.game.reversi.Board;
+import uucki.game.Board;
 import uucki.type.Position;
 import uucki.type.Move;
 import uucki.type.FieldValue;
@@ -10,21 +10,22 @@ import java.util.*;
 
 public class Minimax extends Algorithm {
 
+    public long MAX_TIME = 1000;
+
     public Move run(Board board, FieldValue color) {
         long startingTime = System.currentTimeMillis();
         Move bestMove = null;
         int depth = 1;
-        long cutOffTime = startingTime + 1000;
-        System.out.println(board.emptyFields());
-        while(!board.isFinished() && (System.currentTimeMillis() < cutOffTime || bestMove == null) && depth <= board.emptyFields()) {
+        long cutOffTime = startingTime + MAX_TIME;
+        while(!board.isFinished() && (System.currentTimeMillis() < cutOffTime || bestMove == null) && depth <= board.emptyFields() && depth < 4) {
             Result result = maxValue(depth++, board, color, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, cutOffTime);
             if(System.currentTimeMillis() < cutOffTime) {
                 Collections.reverse(result.moves);
+                Move move = result.moves.get(0);
+                bestMove = move;
                 System.out.print(Arrays.toString(result.moves.toArray()));
                 System.out.println(" " + result.score);
                 System.out.println("Depth: " + depth);
-                Move move = result.moves.get(0);
-                bestMove = move;
             }
         }
         return bestMove;

@@ -1,8 +1,9 @@
-package uucki.graphics.reversi;
+package uucki.graphics;
 
 import uucki.type.FieldValue;
-import uucki.game.reversi.Board;
+import uucki.game.Board;
 import uucki.type.Position;
+import uucki.graphics.reversi.MonteCarlo;
 
 import java.awt.event.*;
 import java.awt.*;
@@ -11,16 +12,22 @@ public class Fields extends Canvas implements MouseListener{
     private FieldValue[][] values = null;
 
     private MonteCarlo mtPainter = null;
+
+    private int rows = 0;
+    private int cols = 0;
     private int fieldWidth = 0;
     private int fieldHeight = 0;
 
     private Position lastClick = null;
 
-    public Fields(MonteCarlo mtPainter) {
+    public Fields(Board board, MonteCarlo mtPainter) {
         super();
         setBackground(Color.GRAY);
 
-        values = new FieldValue[8][8];
+        rows = board.ROW_COUNT;
+        cols = board.COLUMN_COUNT;
+
+        values = new FieldValue[board.ROW_COUNT][board.COLUMN_COUNT];
         for(int row = 0; row < values.length; row++) {
             for(int column = 0; column < values[row].length; column++) {
                 values[row][column] = FieldValue.EMPTY;
@@ -36,35 +43,35 @@ public class Fields extends Canvas implements MouseListener{
     }
 
     public void updateValues(Board board) {
-        for(int row = 0; row < values.length; row++) {
-            for(int column = 0; column < values[row].length; column++) {
+        for(int row = 0; row < rows; row++) {
+            for(int column = 0; column < cols; column++) {
                 values[row][column] = board.getFieldValue(row, column);
             }
         }
     }
 
     public void paint(Graphics g) {
-        fieldWidth = (int)Math.round(getWidth() / 8.0);
-        fieldHeight = (int)Math.round(getHeight() / 8.0);
+        fieldWidth = (int)Math.round(getWidth() / (double)cols);
+        fieldHeight = (int)Math.round(getHeight() / (double)rows);
 
-        for(int row = 0; row < values.length; row++) {
-            for(int column = 0; column < values[row].length; column++) {
+        for(int row = 0; row < rows; row++) {
+            for(int column = 0; column < cols; column++) {
                 if(values[row][column] == null) {
                     g.setColor(Color.GRAY);
-                    g.fillRect(row * fieldWidth, column * fieldHeight, fieldWidth, fieldHeight);
+                    g.fillRect(column * fieldWidth, row * fieldHeight, fieldWidth, fieldHeight);
                 } else {
                     switch(values[row][column]) {
                         case EMPTY:
                             g.setColor(Color.GRAY);
-                            g.fillRect(row * fieldWidth, column * fieldHeight, fieldWidth, fieldHeight);
+                            g.fillRect(column * fieldWidth, row * fieldHeight, fieldWidth, fieldHeight);
                             break;
                         case WHITE:
                             g.setColor(Color.WHITE);
-                            g.fillOval(row * fieldWidth, column * fieldHeight, fieldWidth, fieldHeight);
+                            g.fillOval(column * fieldWidth, row * fieldHeight, fieldWidth, fieldHeight);
                             break;
                         case BLACK:
                             g.setColor(Color.BLACK);
-                            g.fillOval(row * fieldWidth, column * fieldHeight, fieldWidth, fieldHeight);
+                            g.fillOval(column * fieldWidth, row * fieldHeight, fieldWidth, fieldHeight);
                             break;
                     }
                 }
@@ -72,8 +79,10 @@ public class Fields extends Canvas implements MouseListener{
         }
 
         g.setColor(Color.GREEN);
-        for(int i = 0; i < 8; i++) {
+        for(int i = 0; i < cols; i++) {
             g.drawLine(i * fieldWidth, 0, i * fieldWidth, getHeight());
+        }
+        for(int i = 0; i < rows; i++) {
             g.drawLine(0, i * fieldHeight, getWidth(), i * fieldHeight);
         }
 
@@ -95,10 +104,10 @@ public class Fields extends Canvas implements MouseListener{
     public void mouseClicked(MouseEvent e) {
         int x = e.getX();
         int y = e.getY();
-        fieldWidth = (int)Math.round(getWidth() / 8.0);
-        fieldHeight = (int)Math.round(getHeight() / 8.0);
+        fieldWidth = (int)Math.round(getWidth() / (double)cols);
+        fieldHeight = (int)Math.round(getHeight() / (double)rows);
 
-        lastClick = new Position(x / fieldWidth, y / fieldHeight);
+        lastClick = new Position(y / fieldHeight, x / fieldWidth);
         System.out.println(lastClick);
     }
     public void mousePressed(MouseEvent e) {

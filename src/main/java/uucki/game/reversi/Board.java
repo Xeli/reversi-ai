@@ -6,14 +6,8 @@ import uucki.type.Position;
 
 import java.util.*;
 
-public class Board{
-
-    public FieldValue[] board = new FieldValue[8*8];
-    public int whites = 0;
-    public int blacks = 0;
-
-    private List<Position> possibleWhitePositions = null;
-    private List<Position> possibleBlackPositions = null;
+public class Board extends uucki.game.Board {
+    public boolean negativeWinner = false;
 
     public static double[][] weights = new double[][]{
         new double[]{ 6.21,  1.88,  12.4,  0.37,  0.37, 12.40,  1.88, 6.21 },
@@ -25,6 +19,12 @@ public class Board{
         new double[]{ 1.88, -1.00, -5.45, -1.40, -1.40, -5.45, -1.00, 1.88 },
         new double[]{ 6.21,  1.88,  12.4,  0.37,  0.37, 12.40,  1.88, 6.21 },
     };
+
+    public Board() {
+        ROW_COUNT = 8;
+        COLUMN_COUNT = 8;
+        board = new FieldValue[ROW_COUNT * COLUMN_COUNT];
+    }
 
     public Board makeMove(Move move) {
         Board newBoard = (Board)clone();
@@ -74,23 +74,23 @@ public class Board{
         currentPosition.column += columnDirection;
 
         //there needs to be atleast one opponent stone to be swapped
-        if(!Board.validPosition(currentPosition) || getFieldValue(currentPosition) != opponentColor) {
+        if(!validPosition(currentPosition) || getFieldValue(currentPosition) != opponentColor) {
             return swaps;
         }
 
         //skip all other opponent stones
-        while(Board.validPosition(currentPosition) && getFieldValue(currentPosition) == opponentColor) {
+        while(validPosition(currentPosition) && getFieldValue(currentPosition) == opponentColor) {
             currentPosition.row += rowDirection;
             currentPosition.column += columnDirection;
         }
-        if(!Board.validPosition(currentPosition) || getFieldValue(currentPosition) != color) {
+        if(!validPosition(currentPosition) || getFieldValue(currentPosition) != color) {
             return swaps;
         }
 
         currentPosition = (Position)position.clone();
         currentPosition.row += rowDirection;
         currentPosition.column += columnDirection;
-        while(Board.validPosition(currentPosition) && getFieldValue(currentPosition) == opponentColor) {
+        while(validPosition(currentPosition) && getFieldValue(currentPosition) == opponentColor) {
             swaps++;
             if(!countOnly) {
                 setFieldValue(currentPosition, color);
@@ -102,37 +102,8 @@ public class Board{
         return swaps;
     }
 
-    public void setFieldValue(int row, int column, FieldValue color) {
-        possibleBlackPositions = null;
-        possibleWhitePositions = null;
-        FieldValue oldColor = board[row * 8 + column];
-        if(oldColor == color) {
-            return;
-        }
-        if(color == FieldValue.WHITE) {
-            whites++;
-            if(oldColor == FieldValue.BLACK) {
-                blacks--;
-            }
-        } else {
-            blacks++;
-            if(oldColor == FieldValue.WHITE) {
-                whites--;
-            }
-        }
-        board[row * 8 + column] = color;
-    }
-
     public void setFieldValue(Position position, FieldValue color) {
         setFieldValue(position.row, position.column, color);
-    }
-
-    public FieldValue getFieldValue(int row, int column) {
-        return board[row * 8 + column];
-    }
-
-    public FieldValue getFieldValue(Position position) {
-        return board[position.row * 8 + position.column];
     }
 
     public boolean isFinished() {
@@ -144,43 +115,11 @@ public class Board{
     }
 
     public FieldValue getWinner() {
-        return whites > blacks ? FieldValue.WHITE : FieldValue.BLACK;
-    }
-
-    public int emptyFields() {
-        return 8*8 - (whites + blacks);
-    }
-
-    public void print() {
-        System.out.print("=");
-        for(int column = 0; column < 8; column++) {
-            System.out.print(column);
+        boolean whiteWins = whites > blacks;
+        if (negativeWinner) {
+            whiteWins = blacks > whites;
         }
-        for(int i = 0; i < board.length; i++) {
-            if(i % 8 == 0) {
-                System.out.print("=\n=");
-            }
-
-            System.out.print(board[i] == null ? " " : board[i]);
-        }
-        System.out.println("=");
-        System.out.println(new String(new char[10]).replace("\0", "="));
-    }
-
-    public Object clone() {
-        Board newBoard = new Board();
-        newBoard.board = Arrays.copyOf(board, board.length);
-        newBoard.whites = whites;
-        newBoard.blacks = blacks;
-        return newBoard;
-    }
-
-    public static boolean validPosition(Position position) {
-        return position.row >= 0 &&
-               position.column >= 0 &&
-               position.row < 8 &&
-               position.column < 8;
-
+        return whiteWins ? FieldValue.WHITE : FieldValue.BLACK;
     }
 
     public static Board initialBoard(boolean blackTopLeft) {
@@ -204,14 +143,12 @@ public class Board{
         return weights[position.row][position.column] + 5.45;
     }
 
-    public int hashCode() {
-        return Arrays.hashCode(board);
+    public Object clone() {
+        Board newBoard = new Board();
+        newBoard.board = Arrays.copyOf(board, board.length);
+        newBoard.whites = whites;
+        newBoard.blacks = blacks;
+        return newBoard;
     }
 
-    public boolean equals(Object o) {
-        if(!(o instanceof Board)) {
-            return false;
-        }
-        return o.hashCode() == hashCode();
-    }
 }

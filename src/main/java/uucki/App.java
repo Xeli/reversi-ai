@@ -50,7 +50,7 @@ public class App {
 
             Algorithm minimax = new MonteCarloTreeSearch();
             VersusAI mode = new VersusAI(board, imStarting, myColor, minimax);
-            board = mode.game();
+            board = (Board)mode.game();
             if(board.getWinner() == myColor) {
                 System.out.println("I won!");
             } else {

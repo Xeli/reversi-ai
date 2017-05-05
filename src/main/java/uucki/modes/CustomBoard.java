@@ -2,17 +2,15 @@ package uucki.modes;
 
 import uucki.game.reversi.Board;
 import uucki.type.*;
-import uucki.graphics.reversi.Window;
+import uucki.graphics.Window;
 
 import java.io.*;
 
 public class CustomBoard {
 
     public static Board get(BufferedReader br) throws IOException {
-        Window window = new Window(null);
-
         Board board = new Board();
-
+        Window window = new Window(board, null);
         do {
             System.out.println("How many whites do you want?");
             int count = Integer.parseInt(br.readLine());

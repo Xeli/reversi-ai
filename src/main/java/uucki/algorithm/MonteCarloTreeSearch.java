@@ -9,8 +9,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Optional;
 
-import uucki.game.reversi.Board;
+import uucki.game.Board;
 import uucki.heuristic.reversi.Basic;
 import uucki.type.FieldValue;
 import uucki.type.Move;
@@ -19,12 +20,17 @@ import uucki.type.Node;
 
 public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
-    private static final long MAX_TIME = 500 * 1;
-    private final static int THREADS = 4;
+    public static final int RANDOM  = 0;
+    public static final int CORNERS = 1;
+    public static final int WEIGHTED = 2;
+
+    public long MAX_TIME = 100 * 1;
+    private final static int THREADS = 1;
+    private boolean uniformTopChoice = false;
 
     private Board currentBoard = null;
     private FieldValue currentColor = null;
-    private AtomicInteger simulationCount = new AtomicInteger();
+    public AtomicInteger simulationCount = new AtomicInteger();
 
     private ConcurrentHashMap<Board, Node<Board>> nodesBlack = new ConcurrentHashMap<Board, Node<Board>>();
     private ConcurrentHashMap<Board, Node<Board>> nodesWhite = new ConcurrentHashMap<Board, Node<Board>>();
@@ -32,43 +38,36 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
     private long cutOffTime = 0;
 
     private double c = 0;
-    private boolean weightedSimulation = false;
+    private int simulatedStrategy = RANDOM;
     private boolean tuned = false;
 
-    private int simulations = 0;
-    private ExecutorService executor = null;
 
     public MonteCarloTreeSearch() {
 
     }
 
-    public MonteCarloTreeSearch(double c, boolean weightedSimulation, boolean tuned) {
-        this(c, weightedSimulation, tuned, Executors.newCachedThreadPool());
-    }
-
-    public MonteCarloTreeSearch(double c, boolean weightedSimulation, boolean tuned, ExecutorService executor) {
+    public MonteCarloTreeSearch(double c, int simulatedStrategy, boolean tuned) {
         this.c = c;
-        this.weightedSimulation = weightedSimulation;
+        this.simulatedStrategy = simulatedStrategy;
         this.tuned = tuned;
-        this.executor = executor;
     }
 
     public Move run(Board board, FieldValue color) {
-        return run(board, color, true);
-    }
-
-    public Move run(Board board, FieldValue color, boolean cleanup) {
+        cleanup();
         currentBoard = board;
         currentColor = color;
         rootNode = new Node<Board>(board, color);
 
         List<Position> positions = rootNode.item.getPossiblePositions(color);
+        System.out.println("possible positions: " + positions.size());
         if(positions.size() == 0) {
             return null;
         }
         if(positions.size() == 1) {
             return new Move(positions.get(0), color);
         }
+
+        ExecutorService executor = Executors.newCachedThreadPool();
 
         long startingTime = System.currentTimeMillis();
         cutOffTime = startingTime + MAX_TIME;
@@ -79,17 +78,14 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
         try {
             Thread.sleep(MAX_TIME);
-            //executor.shutdownNow();
+            executor.shutdownNow();
             executor.awaitTermination(MAX_TIME, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
-
+            System.out.println("Interrupted");
         }
 
         Move bestMove = getBestMove(rootNode);
 
-        if(cleanup) {
-            cleanup();
-        }
         return bestMove;
     }
 
@@ -102,18 +98,14 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
             selectAndExpand(ancestors);
             biggestDepth = Math.max(biggestDepth, ancestors.size());
             Node<Board> lastNode = ancestors.get(ancestors.size() - 1);
-            FieldValue winner = simulate(lastNode, weightedSimulation);
+            FieldValue winner = simulate(lastNode, simulatedStrategy);
             getNodes(lastNode.color).put(lastNode.item, lastNode);
-            double heuristic = Basic.getValue(lastNode.item, FieldValue.WHITE);
-            double lambda = 0.25;
-            double whiteScore = (winner == FieldValue.WHITE ? 1 : 0) * (1-lambda) + (heuristic > 0 ? 1 : 0) * lambda;
-            double blackScore = (winner == FieldValue.BLACK ? 1 : 0) * (1-lambda) + (heuristic > 0 ? 0 : 1) * lambda;
+            double whiteScore = (winner == FieldValue.WHITE ? 1 : 0);
+            double blackScore = (winner == FieldValue.BLACK ? 1 : 0);
             update(ancestors, blackScore, whiteScore);
             simulations++;
         }
-        synchronized(this) {
-            this.simulations += simulations;
-        }
+        this.simulationCount.addAndGet(simulations);
     }
 
     public ConcurrentHashMap<Board, Node<Board>> getNodes(FieldValue color) {
@@ -168,18 +160,31 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
             //there are one or more children, using uct to pick one
 
             //get plays from all children and sum them
-            double totalPlays = children.stream().mapToDouble(c -> c.plays).reduce(0.0, (i, c) -> i + c);
+            double totalPlays = children.stream().mapToDouble(c -> c == null ? 0.0 : c.plays).reduce(0.0, (i, c) -> i + c);
             double logTotalPlays = Math.log(totalPlays);
             double oldScore = Double.NEGATIVE_INFINITY;
             for(Node<Board> node : children) {
-                double T = node.plays;
-                double X = node.score / (double)node.plays;
-                double S = X * X;
-                double V = S - X + Math.sqrt((2 * logTotalPlays) / T);
-                double score    = X + 2 * this.c * Math.sqrt(logTotalPlays / T);
-                if(child == null || score > oldScore) {
-                    oldScore = score;
-                    child = node;
+                if(uniformTopChoice && ancestors.size() == 1) {
+                    if(child == null || node.plays < child.plays) {
+                        child = node;
+                    }
+                } else {
+                    double score = 0;
+                    double X = node.score / (double)node.plays;
+                    if(tuned) {
+                        //UCB1-Tuned
+                        //because X = {0,1} we can simplify the UCB1-tuned V formula by a lot
+                        //first term == X
+                        double V = X - (X*X) + Math.sqrt((2 * logTotalPlays) / (double)node.plays);
+                        score = X + this.c * Math.sqrt( (logTotalPlays / (double)node.plays) * Math.min(0.25, V));
+                    } else {
+                    //UCB1
+                        score = X + 2 * this.c * Math.sqrt(logTotalPlays / (double)node.plays);
+                    }
+                    if(child == null || score > oldScore) {
+                        oldScore = score;
+                        child = node;
+                    }
                 }
             }
         }
@@ -187,18 +192,18 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
         selectAndExpand(ancestors);
     }
 
-    private FieldValue simulate(Node<Board> node, boolean weighted) {
+    private FieldValue simulate(Node<Board> node, int simulatedStrategy) {
         Board board = node.item;
         FieldValue color = node.color;
         while(!board.isFinished()) {
-            board = makeRandomMove(board, color, weighted);
+            board = makeRandomMove(board, color, simulatedStrategy);
             color = color.getOpponent();
         }
         simulationCount.incrementAndGet();
         return board.getWinner();
     }
 
-    private Board makeRandomMove(Board board, FieldValue color, boolean weighted) {
+    private Board makeRandomMove(Board board, FieldValue color, int simulatedStrategy) {
         List<Position> positions = board.getPossiblePositions(color);
         if (positions.size() == 0) {
             return board;
@@ -206,23 +211,36 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
 
         Position randomPosition = null;
-        if(weighted) {
-            double sumWeights = positions.stream().mapToDouble(p -> board.getWeight(p)).sum();
-            double random = ThreadLocalRandom.current().nextDouble() * sumWeights;
-
-            double edge = 0;
-            for(Position p : positions) {
-                edge += board.getWeight(p);
-                if(random <= edge) {
-                    randomPosition = p;
-                    break;
+        switch(simulatedStrategy) {
+            default:
+            case RANDOM:
+                randomPosition = positions.get(ThreadLocalRandom.current().nextInt(positions.size()));
+                break;
+            case CORNERS:
+                Optional<Position> cornerMove = positions.stream().filter(p -> p.isCorner()).findAny();
+                if(cornerMove.isPresent()) {
+                    randomPosition = cornerMove.get();
+                } else {
+                    randomPosition = positions.get(ThreadLocalRandom.current().nextInt(positions.size()));
                 }
-            }
-            if(randomPosition == null) {
-                randomPosition = positions.get(positions.size()-1);
-            }
-        } else {
-            randomPosition = positions.get(ThreadLocalRandom.current().nextInt(positions.size()));
+                break;
+            case WEIGHTED:
+                uucki.game.reversi.Board b = (uucki.game.reversi.Board)board;
+                double sumWeights = positions.stream().mapToDouble(p -> b.getWeight(p)).sum();
+                double random = ThreadLocalRandom.current().nextDouble() * sumWeights;
+
+                double edge = 0;
+                for(Position p : positions) {
+                    edge += b.getWeight(p);
+                    if(random <= edge) {
+                        randomPosition = p;
+                        break;
+                    }
+                }
+                if(randomPosition == null) {
+                    randomPosition = positions.get(positions.size()-1);
+                }
+                break;
         }
         return board.makeMove(new Move(randomPosition, color));
     }
@@ -301,6 +319,6 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
         currentBoard = null;
         nodesBlack.clear();
         nodesWhite.clear();
-
+        simulationCount.set(0);
     }
 }

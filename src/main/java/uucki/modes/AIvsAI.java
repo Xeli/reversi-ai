@@ -4,7 +4,7 @@ import uucki.game.reversi.Board;
 import uucki.type.FieldValue;
 import uucki.type.Move;
 import uucki.algorithm.Algorithm;
-import uucki.graphics.reversi.Window;
+import uucki.graphics.Window;
 
 public class AIvsAI {
 
@@ -21,7 +21,7 @@ public class AIvsAI {
         this.ai2= ai2;
         this.showBoard = showBoard;
         if(showBoard) {
-            this.window = new Window(null);
+            this.window = new Window(board, null);
         }
     }
 

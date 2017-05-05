@@ -1,6 +1,6 @@
 package uucki.algorithm;
 
-import uucki.game.reversi.Board;
+import uucki.game.Board;
 import uucki.type.Move;
 import uucki.type.FieldValue;
 

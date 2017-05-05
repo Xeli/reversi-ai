@@ -21,7 +21,7 @@ public class MonteCarlo {
             Double probability = entry.getValue();
             int normalized = (int)Math.round(probability * 128) + 128;
             g.setColor(new Color(normalized, 0, 0));
-            g.fillRect(position.row * fieldWidth, position.column * fieldHeight, fieldWidth, fieldHeight);
+            g.fillRect(position.column * fieldWidth, position.row * fieldHeight, fieldWidth, fieldHeight);
         }
     }
 

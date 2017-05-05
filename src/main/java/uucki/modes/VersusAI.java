@@ -1,12 +1,12 @@
 package uucki.modes;
 
-import uucki.game.reversi.Board;
+import uucki.game.Board;
 import uucki.type.FieldValue;
 import uucki.type.Move;
 import uucki.type.Position;
 import uucki.algorithm.Algorithm;
 import uucki.algorithm.MonteCarloTreeSearch;
-import uucki.graphics.reversi.Window;
+import uucki.graphics.Window;
 import uucki.graphics.reversi.MonteCarlo;
 
 import java.util.*;
@@ -33,11 +33,12 @@ public class VersusAI implements Runnable {
         if(algorithm instanceof MonteCarloTreeSearch) {
             mtPainter = new MonteCarlo();
         }
-        window = new Window(mtPainter);
+        window = new Window(board, mtPainter);
         window.update(board);
         if(algorithm instanceof MonteCarloTreeSearch) {
             new Thread(this).start();
         }
+
 
 
         if(aiFirst) {
@@ -45,6 +46,7 @@ public class VersusAI implements Runnable {
             board = board.makeMove(move);
             window.update(board);
         }
+
         while(!board.isFinished()) {
             if(board.getPossiblePositions(opponentColor).size() > 0) {
                 List<Position> validPositions = board.getPossiblePositions(opponentColor);
