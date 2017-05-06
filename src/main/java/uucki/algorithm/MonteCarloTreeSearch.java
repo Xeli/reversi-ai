@@ -24,8 +24,8 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
     public static final int CORNERS = 1;
     public static final int WEIGHTED = 2;
 
-    public long MAX_TIME = 100 * 1;
-    private final static int THREADS = 1;
+    public long MAX_TIME = 500 * 1;
+    private final static int THREADS = 3;
     private boolean uniformTopChoice = false;
 
     private Board currentBoard = null;
@@ -59,7 +59,6 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
         rootNode = new Node<Board>(board, color);
 
         List<Position> positions = rootNode.item.getPossiblePositions(color);
-        System.out.println("possible positions: " + positions.size());
         if(positions.size() == 0) {
             return null;
         }
@@ -78,8 +77,8 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
 
         try {
             Thread.sleep(MAX_TIME);
-            executor.shutdownNow();
-            executor.awaitTermination(MAX_TIME, TimeUnit.MILLISECONDS);
+            executor.shutdown();
+            executor.awaitTermination(MAX_TIME*2, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             System.out.println("Interrupted");
         }
@@ -92,6 +91,7 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
     public void run() {
         int biggestDepth = 0;
         int simulations = 0;
+        List<Position> positions = rootNode.item.getPossiblePositions(rootNode.color);
         while(System.currentTimeMillis() < cutOffTime) {
             List<Node<Board>> ancestors = new ArrayList<Node<Board>>();
             ancestors.add(rootNode);
@@ -100,8 +100,10 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
             Node<Board> lastNode = ancestors.get(ancestors.size() - 1);
             FieldValue winner = simulate(lastNode, simulatedStrategy);
             getNodes(lastNode.color).put(lastNode.item, lastNode);
-            double whiteScore = (winner == FieldValue.WHITE ? 1 : 0);
-            double blackScore = (winner == FieldValue.BLACK ? 1 : 0);
+
+            double loss = winner == FieldValue.EMPTY ? 0.5 : 0;
+            double whiteScore = (winner == FieldValue.WHITE ? 1 : loss);
+            double blackScore = (winner == FieldValue.BLACK ? 1 : loss);
             update(ancestors, blackScore, whiteScore);
             simulations++;
         }
@@ -273,10 +275,12 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
             double score = 0;
             if(newNode != null) {
                 score = newNode.score/ (double)newNode.plays;
+                System.out.println(newNode.plays);
             }
             sumScores += score;
 
             probabilities.put(position, score);
+            System.out.println(score);
         }
 
         //normalize to 100%
@@ -294,11 +298,19 @@ public class MonteCarloTreeSearch extends Algorithm implements Runnable {
             Move newMove = new Move(position, node.color);
 
             Board board = node.item.makeMove(newMove);
-            Node<Board> newNode = getNodes(node.color.getOpponent()).get(board);
+            try{
+                Node<Board> newNode = getNodes(node.color.getOpponent()).get(board);
             double newScore = (double)newNode.score / (double)newNode.plays;
             if(move == null || newScore >= score) {
                 score = newScore;
                 move = newMove;
+            }
+            } catch (Exception e) {
+                System.out.println(getMoveProbability());
+                System.out.println(simulationCount.get());
+                rootNode.item.print();
+                System.out.println(((uucki.game.fourinarow.Board)rootNode.item).lastMove);
+                System.exit(0);
             }
         }
 

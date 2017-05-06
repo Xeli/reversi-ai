@@ -1,6 +1,6 @@
 package uucki;
 
-import uucki.game.reversi.Board;
+import uucki.game.fourinarow.Board;
 import uucki.algorithm.Algorithm;
 import uucki.algorithm.MonteCarloTreeSearch;
 import uucki.algorithm.Minimax;
@@ -31,32 +31,27 @@ public class OptimizeParameter {
 
     private static void rankPopulation() throws IOException {
         List<Double> population = new ArrayList<Double>();
-        population.add(0.0);
-        population.add(0.1);
         population.add(0.2);
         population.add(0.3);
+        population.add(0.32);
+        population.add(0.34);
+        population.add(0.36);
+        population.add(0.38);
         population.add(0.4);
         population.add(0.5);
-        population.add(0.6);
-        population.add(0.7);
-        population.add(0.8);
-        population.add(0.9);
-        population.add(1.0);
-        population.add(3.0);
-        population.add(5.0);
 
-        SortedMap<Double, Map<Double, Integer>> resultMatrix = new TreeMap<Double, Map<Double, Integer>>();
+        SortedMap<Double, Map<Double, Double>> resultMatrix = new TreeMap<Double, Map<Double, Double>>();
 
         //build up the hashmap resultmatrix
         for(Double current : population) {
-            TreeMap<Double, Integer> results = new TreeMap<Double, Integer>();
+            TreeMap<Double, Double> results = new TreeMap<Double, Double>();
             for(Double opponent : population) {
-                results.put(opponent, 0);
+                results.put(opponent, 0.0);
             }
             resultMatrix.put(current, results);
         }
 
-        TreeMap<Double, Integer> score = new TreeMap<Double, Integer>();
+        TreeMap<Double,Double> score = new TreeMap<Double, Double>();
 
         BufferedWriter result = new BufferedWriter(new FileWriter("result.csv"));
         BufferedWriter matrix = new BufferedWriter(new FileWriter("matrix.csv"));
@@ -67,17 +62,34 @@ public class OptimizeParameter {
                     if(c == opponent) {
                         continue;
                     }
+                    long time = System.currentTimeMillis();
                     double winner = runSingleGame(c, opponent);
-
-                    int currentScore = score.getOrDefault(winner, 0);
-                    score.put(winner, currentScore+1);
+                    System.out.println(System.currentTimeMillis() - time);
 
                     if(winner == c) {
-                        int currentWins = resultMatrix.get(c).get(opponent);
-                        resultMatrix.get(c).put(opponent, currentWins+1);
+                        double currentWins = resultMatrix.get(c).get(opponent);
+                        resultMatrix.get(c).put(opponent, currentWins+1.0);
+
+                        double currentScore = score.getOrDefault(winner, 0.0);
+                        score.put(winner, currentScore+1.0);
+                    } else if (winner == opponent) {
+                        double currentWins = resultMatrix.get(opponent).get(c);
+                        resultMatrix.get(opponent).put(c, currentWins+1.0);
+
+                        double currentScore = score.getOrDefault(winner, 0.0);
+                        score.put(winner, currentScore+1.0);
                     } else {
-                        int currentWins = resultMatrix.get(opponent).get(c);
-                        resultMatrix.get(opponent).put(c, currentWins+1);
+                        double currentWins = resultMatrix.get(c).get(opponent);
+                        resultMatrix.get(c).put(opponent, currentWins+0.5);
+
+                        currentWins = resultMatrix.get(opponent).get(c);
+                        resultMatrix.get(opponent).put(c, currentWins+0.5);
+
+                        double currentScore = score.getOrDefault(c, 0.0);
+                        score.put(c, currentScore+0.5);
+                        currentScore = score.getOrDefault(opponent, 0.0);
+                        score.put(opponent, currentScore+0.5);
+
                     }
                     gamesPlayed++;
                     System.out.println("Played: " + gamesPlayed);
@@ -86,20 +98,20 @@ public class OptimizeParameter {
 
             result.write("=============new================");
             result.newLine();
-            for(Map.Entry<Double, Integer> entry : score.entrySet()) {
+            for(Map.Entry<Double, Double> entry : score.entrySet()) {
                 result.write(entry.getKey() + ", " + entry.getValue());
                 result.newLine();
             }
 
             matrix.write("=============new================");
             matrix.newLine();
-            for(Map.Entry<Double, Map<Double, Integer>> entry : resultMatrix.entrySet()) {
+            for(Map.Entry<Double, Map<Double, Double>> entry : resultMatrix.entrySet()) {
                 matrix.write("," + entry.getKey());
             }
             matrix.newLine();
-            for(Map.Entry<Double, Map<Double, Integer>> entry : resultMatrix.entrySet()) {
+            for(Map.Entry<Double, Map<Double, Double>> entry : resultMatrix.entrySet()) {
                 matrix.write(String.valueOf(entry.getKey()));
-                for(Map.Entry<Double, Integer> winsEntry : entry.getValue().entrySet()) {
+                for(Map.Entry<Double, Double> winsEntry : entry.getValue().entrySet()) {
                     matrix.write(", " + winsEntry.getValue());
                 }
                 matrix.newLine();
@@ -256,15 +268,18 @@ public class OptimizeParameter {
     }
 
     public static double runSingleGame(double value1, double value2) {
-        Algorithm ai1 = new MonteCarloTreeSearch(value1, false, false);
-        Algorithm ai2 = new MonteCarloTreeSearch(value2, false, false);
-        Board board = Board.initialBoard(false);
+        Algorithm ai1 = new MonteCarloTreeSearch(value1, MonteCarloTreeSearch.RANDOM, false);
+        Algorithm ai2 = new MonteCarloTreeSearch(value2, MonteCarloTreeSearch.RANDOM, false);
+        Board board = new Board();
+        board.negativeWinner = true;
         AIvsAI mode = new AIvsAI(board, ai1, ai2, false);
-        board = mode.game();
+        board = (Board)mode.game();
         if(board.getWinner() == FieldValue.WHITE) {
             return value1;
-        } else {
+        } else if (board.getWinner() == FieldValue.BLACK) {
             return value2;
+        } else {
+            return -1000;
         }
     }
 

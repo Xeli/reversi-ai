@@ -15,9 +15,6 @@ public class FourInARow {
 
     public static void main(String[] args) {
         Board board = new Board();
-        System.out.println("hi");
-        System.out.println(board.getPossiblePositions(FieldValue.WHITE));
-        System.out.println("hi");
         Algorithm mcts = new MonteCarloTreeSearch(2, MonteCarloTreeSearch.RANDOM, false);
         VersusAI mode = new VersusAI(board, true, FieldValue.WHITE, mcts);
         board = (Board)mode.game();

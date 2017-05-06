@@ -26,7 +26,7 @@ public class App {
             Algorithm ai2 = new Minimax();
             Board board = Board.initialBoard(false);
             AIvsAI mode = new AIvsAI(board, ai2, ai1, true);
-            board = mode.game();
+            board = (Board)mode.game();
             if(board.getWinner() == FieldValue.WHITE) {
                 System.out.println("White won.");
             } else {

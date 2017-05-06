@@ -5,7 +5,7 @@ import uucki.type.FieldValue;
 import uucki.type.Move;
 import uucki.type.Position;
 import uucki.type.Node;
-import uucki.algorithm.MonteCarloTreeSearch;
+import uucki.algorithm.*;
 import uucki.modes.AIvsAI;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
@@ -13,13 +13,12 @@ import java.util.*;
 
 public class AnalyseBeginnerBias {
 
-    public static int ROUNDS = 100;
+    public static int ROUNDS = 30;
 
     public static void main(String[] args) {
         Board board = Board.initialBoard(false);
-        ExecutorService executor = Executors.newCachedThreadPool();
-        MonteCarloTreeSearch ai = new MonteCarloTreeSearch(0.25, true, false, executor);
-        MonteCarloTreeSearch ai1 = new MonteCarloTreeSearch(0.25, true, false, executor);
+        MonteCarloTreeSearch ai = new MonteCarloTreeSearch(0.2, MonteCarloTreeSearch.RANDOM, false);
+        ai.MAX_TIME = 500;
 
         int aiWins = 0;
         int ai1Wins = 0;
@@ -34,7 +33,7 @@ public class AnalyseBeginnerBias {
                     board = board.makeMove(move);
                 }
 
-                move = ai1.run(board, FieldValue.BLACK);
+                move = ai.run(board, FieldValue.BLACK);
                 if(move != null) {
                     board = board.makeMove(move);
                 }
@@ -45,19 +44,16 @@ public class AnalyseBeginnerBias {
             } else {
                 ai1Wins++;
             }
+            System.out.println(aiWins);
+            System.out.println(ai1Wins);
+
+            if(aiWins > ai1Wins) {
+                System.out.println("AI is better");
+            } else if(ai1Wins > aiWins) {
+                System.out.println("AI1 is better");
+            } else {
+                System.out.println("Draw");
+            }
         }
-
-        System.out.println(aiWins);
-        System.out.println(ai1Wins);
-
-        if(aiWins > ai1Wins) {
-            System.out.println("AI is better");
-        } else if(ai1Wins > aiWins) {
-            System.out.println("AI1 is better");
-        } else {
-            System.out.println("Draw");
-        }
-
-        executor.shutdown();
     }
 }

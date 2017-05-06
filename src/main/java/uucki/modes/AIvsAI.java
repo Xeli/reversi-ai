@@ -1,6 +1,6 @@
 package uucki.modes;
 
-import uucki.game.reversi.Board;
+import uucki.game.Board;
 import uucki.type.FieldValue;
 import uucki.type.Move;
 import uucki.algorithm.Algorithm;
@@ -36,10 +36,12 @@ public class AIvsAI {
 
             updateBoard(board);
 
-            //Computer move
-            move = ai2.run(board, FieldValue.BLACK);
-            if(move != null) {
-                board = board.makeMove(move);
+            if(!board.isFinished()) {
+                //Computer move
+                move = ai2.run(board, FieldValue.BLACK);
+                if(move != null) {
+                    board = board.makeMove(move);
+                }
             }
         }
 
