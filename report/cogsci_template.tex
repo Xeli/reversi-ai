@@ -107,7 +107,7 @@ sorting=ynt
 \addresses{} % Your address, this is not currently used anywhere in the template, print it elsewhere with \addressname
 
 \subject{Artificial Intelligence} % Your subject area, this is not currently used anywhere in the template, print it elsewhere with \subjectname
-\keywords{Bandit problems, UCT, Monte carlo tree search, Othello} % Keywords for your thesis, this is not currently used anywhere in the template, print it elsewhere with \keywordnames
+\keywords{Exploration vs Exploitation, Monte carlo tree search, UCT, Exploration parameter, Othello} % Keywords for your thesis, this is not currently used anywhere in the template, print it elsewhere with \keywordnames
 \university{Utrecht University} % Your university's name and URL, this is used in the title page and abstract, print it elsewhere with \univname
 \department{} % Your department's name and URL, this is used in the title page and abstract, print it elsewhere with \deptname
 \group{} % Your research group's name and URL, this is used in the title page, print it elsewhere with \groupname
@@ -116,7 +116,7 @@ sorting=ynt
 \AtBeginDocument{
 	\hypersetup{pdftitle={Exploring and Exploiting Monte-Carlo Othello}} % Set the PDF's title to your title
 	\hypersetup{pdfauthor={Richard Deurwaarder}} % Set the PDF's author to your name
-	\hypersetup{pdfkeywords={Bandit problems, UCT, Monte carlo tree search, Othello}} % Set the PDF's keywords to your keywords
+	\hypersetup{pdfkeywords={Exploration vs Exploitation, Monte carlo tree search, UCT, Exploration parameter, Othello}} % Set the PDF's keywords to your keywords
 	\hypersetup{%
 		colorlinks = true,
 		linkcolor  = black
@@ -156,7 +156,8 @@ sorting=ynt
 
 \begin{abstract}
 	\addchaptertocentry{\abstractname} % Add the abstract to the table of contents
-	The Exploration versus Exploitation dilemma is a trade-off which presents itself in many algorithms including Monte Carlo Tree Search with the UCT policy. UCT is designed to control this trade-off and is influenced via a specific parameter: the exploration parameter. A faulty assumption is sometimes made that this exploration parameter is robust and has a sane default value. In this paper, I will use the board game Othello to show the influence of the exploration parameter and show that using this `default' value rather than a value tuned for a specific problem can have dramatic performance implications.
+	The Exploration versus Exploitation dilemma is a trade-off dilemma which presents itself in many algorithms including Monte Carlo Tree Search with the UCT policy. UCT is designed to control this trade-off and is influenced via a specific parameter: the exploration parameter. A faulty assumption is sometimes made that this exploration parameter is robust and has a sane default value. In this paper, I will use the board game Othello to show the influence of the exploration parameter and show that using this `default' value rather than a value tuned for a specific problem can have dramatic performance implications.\\ \\
+	{\footnotesize \textbf{Keywords:} \keywordnames}
 \end{abstract}
 
 \tableofcontents % Prints the main table of contents
