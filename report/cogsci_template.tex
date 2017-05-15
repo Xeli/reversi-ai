@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Masters/Doctoral Thesis 
+	% Masters/Doctoral Thesis 
 % LaTeX Template
 % Version 2.4 (22/11/16)
 %
@@ -124,7 +124,7 @@ sorting=ynt
 }
 
 \begin{document}
-
+\frontmatter
 %----------------------------------------------------------------------------------------
 %	TITLE PAGE
 %----------------------------------------------------------------------------------------
@@ -150,6 +150,15 @@ sorting=ynt
 	{\large \today\par}
 \end{titlepage}
 
+%----------------------------------------------------------------------------------------
+%	ABSTRACT PAGE
+%----------------------------------------------------------------------------------------
+
+\begin{abstract}
+	\addchaptertocentry{\abstractname} % Add the abstract to the table of contents
+	The Exploration versus Exploitation dilemma is a trade-off which presents itself in many algorithms including Monte Carlo Tree Search with the UCT policy. UCT is designed to control this trade-off and is influenced via a specific parameter: the exploration parameter. A faulty assumption is sometimes made that this exploration parameter is robust and has a sane default value. In this paper, I will use the board game Othello to show the influence of the exploration parameter and show that using this `default' value rather than a value tuned for a specific problem can have dramatic performance implications.
+\end{abstract}
+
 \tableofcontents % Prints the main table of contents
 
 %----------------------------------------------------------------------------------------
@@ -164,20 +173,20 @@ sorting=ynt
 \chapter{Introduction}
 
 \section{Overview}
-Monte Carlo planning has long been a good solution to find near-optimal solutions to large state space Markovian Decision Problems (MDP). This is a type of problem where an action needs to be taken which influences what new state is reached. Each state can be associated with a reward and this reward needs to be optimized. When the problems become sufficiently large it quickly becomes infeasible to search the whole state-space and trade-offs need to be made. In this thesis I will look at the board game Othello. Finding good moves for Othello can be described as an MDP but its state space is far too large to search through completely.\\
+Monte Carlo planning has long been a good solution to find near-optimal solutions to large state space Markovian Decision Problems (MDP). This is a type of problem where an action needs to be taken which influences what new state is reached. Each state can be associated with a reward and this reward needs to be optimized. When the problems become sufficiently large it quickly becomes infeasible to search the whole state-space and trade-offs need to be made. In this thesis, I will look at the board game Othello. Finding good moves for Othello can be described as an MDP but its state space is far too large to search through completely.\\
 
 In problems with such large state spaces, it is useful to gather information about which actions are more promising than others and put more effort into investigating states resulting from those promising actions. Gathering information costs time and is not directly useful for our solution, ideally we want to spend just enough time gathering information to identify the good actions and focus investigating which action is best. This is the classic exploration versus exploitation problem: How much effort do we put into exploring how promising the actions are and how much effort is put into exploiting this information. One algorithm proposed by Kocsis and Szepesvari\cite{Kocsis:2006} called UCT deals with this problem.\\
 
-UCT uses an algorithm called Monte Carlo Tree Search in combination with a (modified) selection policy called UCB1. UCT introduces a parameter sometimes called the exploration parameter usually denoted by c or $C_p$. This c-value drives how much exploring and exploiting is done. This value should be chosen based on prior knowledge of the problem, in practice this does not always happen and sometimes wrongly assumed `default' values are used without consideration. I will provide insight in the importance of choosing optimal or good values for the exploration parameter.
+UCT uses an algorithm called Monte Carlo Tree Search in combination with a (modified) selection policy called UCB1. UCT introduces a parameter sometimes called the exploration parameter usually denoted by c or $C_p$. This c-value drives how much exploring and exploiting is done. This value should be chosen based on prior knowledge of the problem, in practice this does not always happen and sometimes wrongly assumed `default' values are used without consideration. I will provide insight into the importance of choosing optimal or good values for the exploration parameter.
 \vfill
 \pagebreak
 \section{Research questions}
 \label{section:research-questions}
-The main question I will answer is how important it is to pick a good $c$-value when using the UCT algorithm. To answer this question, experiments will show using different $c$-values impacts the performance\footnote{An increase in performance would be shown by finding (good) solutions in less time.} of UCT. By using the 2-player game Othello I can test if any optimal c-values exist with respect to other $c$-values. Finally when comparing optimal $c$-values with suboptimal values I can measure the actual impact of choosing suboptimal $c$-values.\\
+The main question I will answer is how important it is to pick a good $c$-value when using the UCT algorithm. To answer this question, experiments will show using different $c$-values impacts the performance\footnote{An increase in performance would be shown by finding (good) solutions in less time.} of UCT. By using the 2-player game Othello I can test if any optimal c-values exist with respect to other $c$-values. Finally, when comparing optimal $c$-values with suboptimal values I can measure the actual impact of choosing suboptimal $c$-values.\\
 
 The main question: How important is it to pick an appropriate $c$-value when using UCT.
 
-Will be answered by providing insight in the following research questions:
+Will be answered by providing insight into the following research questions:
 \begin{itemize}
 	\item How do different $c$-values in UCT compare?
 	\item Is there any optimal $c$-value for a given problem?
@@ -189,7 +198,7 @@ To answer these questions I will provide the context in which the experiments wi
 \chapter{Problem analysis}
 
 \section{Exploration vs Exploitation}
-At the heart of Monte Carlo planning algorithms lies the Exploration versus Exploitation dilemma. The Multi Arm Bandit problem is a classic approach to demonstrate this dilemma, its importance realized by H. Robbins back in 1952. This bandit problem explains a metric called regret, introduced by Lai and Robbins\cite{Lai+Robbins:1985} in 1985. Regret can be used to define how much time has been spent exploring suboptimal possible solutions. Using the bandit problem we can reason about what information regret actually gives us and show some of the theoretical limits for regret while searching for a solution.
+At the heart of Monte Carlo planning algorithms lies the Exploration versus Exploitation dilemma. The Multi-Arm Bandit problem is a classic approach to demonstrate this dilemma, its importance realized by H. Robbins back in 1952. This bandit problem explains a metric called regret, introduced by Lai and Robbins\cite{Lai+Robbins:1985} in 1985. Regret can be used to define how much time has been spent exploring suboptimal possible solutions. Using the bandit problem we can reason about what information regret actually gives us and show some of the theoretical limits for regret while searching for a solution.
 
 \subsection{Multi-Arm Bandit Problem}
 The multi-arm bandit problem can be described as follows: Imagine multiple slot machines in a casino, each having an arm to initiate actually playing the machine. Playing a machine will give some sort of reward or payout. Which while random, does follow some sort of distribution. The objective is to maximize the sum of the rewards earned through a sequence of machines played.\\
@@ -197,7 +206,7 @@ The multi-arm bandit problem can be described as follows: Imagine multiple slot 
 Formally we can define a K-armed bandit problem by random variables $X_{i,n}$ for $1 \leq i \leq K$ where each $i$ is the index of a machine and $K$ the number of machines. Successive plays of machine $i$ yield rewards $X_{i,1},X_{i,2},X_{i,3}...$ which are independent, identically distributed and have an unknown expected value of $\mu_i$.
 
 \subsection{Regret}
-Regret is defined as the amount of reward we did not receive because the optimal machine was not chosen, because we were exploring other arms for example. Let $\mu_i$ be the expected reward for machine $i$ and $\mu^{*}$ be defined as $\max\limits_{1 \leq i \leq K} (\mu_i)$ or in words $\mu^{*}$ is the expected reward of the optimal machine. $n$ the total amount of plays. $T_i(n)$ the number of times machine $i$ has been played at $n$ plays. $\IE[*]$ is used to denote expectation. Then the total regret can be defined as:
+Regret is defined as the amount of reward we did not receive because the optimal machine was not chosen because we were exploring other arms for example. Let $\mu_i$ be the expected reward for machine $i$ and $\mu^{*}$ be defined as $\max\limits_{1 \leq i \leq K} (\mu_i)$ or in words $\mu^{*}$ is the expected reward of the optimal machine. $n$ the total amount of plays. $T_i(n)$ the number of times machine $i$ has been played at $n$ plays. $\IE[*]$ is used to denote expectation. Then the total regret can be defined as:
 \[
     regret = \mu^*n - \sum_{i=1}^{k}\mu_i\IE[T_i(n)]
 \]
@@ -222,7 +231,7 @@ This makes regret a good measurement on how well we are balancing the exploratio
 \section{Othello}
 Before explaining the UCT algorithm, I will talk about the terminology, rules and strategic ideas of the game Othello. This will allow us to speak about the algorithm in the context of an actual problem.\\
 
-Othello is a strategic board game for two players. Sometimes also referred to as Reversi. Othello players are assigned a color and take turns placing pieces on the board while capturing pieces of the other player. The player with most pieces left at the end of the game wins. The Exploration vs. Exploitation dilemma presents itself in the game Othello when deciding what move to make. This happens when a player has multiple valid moves, figure \ref{fig:othello-gametree} shows the four possible moves when starting at figure \ref{fig:othello-startposition}. The different moves can be seen as different `arms' in the Multi Armed Bandit problem and the chance of winning the game after choosing that move can be seen as the reward.\\
+Othello is a strategic board game for two players. Sometimes also referred to as Reversi. Othello players are assigned a color and take turns placing pieces on the board while capturing pieces of the other player. The player with most pieces left at the end of the game wins. The Exploration vs. Exploitation dilemma presents itself in the game Othello when deciding what move to make. This happens when a player has multiple valid moves, figure \ref{fig:othello-gametree} shows the four possible moves when starting at figure \ref{fig:othello-startposition}. The different moves can be seen as different `arms' in the Multi-Arm Bandit problem and the chance of winning the game after choosing that move can be seen as the reward.\\
 \subsection{Terminology}
 These are the terms used when referring to the different components and concepts of the Othello game:
 \begin{itemize}
@@ -247,8 +256,8 @@ Othello is played on a board of 8 by 8 squares\footnote{Versions of Othello are 
 \subsection{Importance of different squares} The pieces in the middle of the board might be captured and recaptured multiple times because they are surrounded by so many different positions but the corner squares will never be captured once initially filled, because they cannot be surrounded, making it a safe and valuable position to take. By proxy, this makes placing a piece on one of the 3 squares surrounding a corner a bad move, because this allows the opponent to make a corner move. We would expect an algorithm to take advantage of this. 
 
 \subsection{Exploring and exploiting with Othello}
-Monte Carlo tree search and especially UCT, has been tested and analyzed using board games such as Othello, Chess, Go etc. Most notably with Go, a lot of progress has been made recently, where MCTS has been used in combination with Deep neural networks beating (human) world champions\cite{deepmind}.\\
-The reason these board games work well when analyzing is because they have no hidden information. The algorithm can see exactly where all the pieces are on the board and requires no context or historic moves to decide what move it is going to make. Games where not all information is shared among the players are games such as poker or blackjack, where not every card is visible to al the players.\\
+Monte Carlo tree search and especially UCT has been tested and analyzed using board games such as Othello, Chess, Go etc. Most notably with Go, a lot of progress has been made recently, where MCTS has been used in combination with Deep neural networks beating (human) world champions\cite{deepmind}.\\
+The reason these board games work well when analyzing is because they have no hidden information. The algorithm can see exactly where all the pieces are on the board and requires no context or historic moves to decide what move it is going to make. Games, where not all information is shared among the players are games such as poker or blackjack, in these games, not every card is visible to all the players.\\
 
 In this thesis, I will test and compare specific values of the exploration parameter (c-value) against other c-values. Two player games provide a very naturally means of comparing these two values by just playing them against each other and see who wins the game.\\
 Othello, in particular, makes a good test-case because the game length has a hard limit. Once the board is full the game is over, this limits the game to a maximum of 60 moves. The possible amount of valid moves per turn is generally small, usually staying under 8-10. Having smaller and thus computationally faster games allows for less noise in the results because we can test more games.
@@ -256,11 +265,11 @@ Othello, in particular, makes a good test-case because the game length has a har
 \section{Monte Carlo Tree search}
 Using Monte Carlo Tree search(MCTS) in combination with Othello we are presented with a clean instance of the Exploration versus Exploitation dilemma. MCTS builds and searches through a (game)tree structure and gathers information by sampling the tree lots of times. An Othello turn with all the possible moves that are available to the player can be represented by such a tree structure. (fig: \ref{fig:othello-gametree})\\ 
 
-MCTS works by selecting a move and simulate games using this move as the initial action. Simulated games can be viewed as sampling from all the possible outcomes of the game given a specific board state. By taking many samples the algorithm gets information on how well certain moves perform, this is be defined by how many games have been won when simulating using a certain move. Using a minimax tree it is possible to represent the moves made by the opponent in an Othello game, where a player would like to maximize its own score and at the same time minimize their opponent's score. 
-Exploration vs exploitation presents itself when we need to make a decision for what Othello move we are going to use to simulate games. Will we choose the best move so far? Or are we going to try other moves to see if they have potential.
+MCTS works by selecting a move and simulate games using this move as the initial action. Simulated games can be viewed as sampling from all the possible outcomes of the game given a specific board state. By taking many samples the algorithm gets information on how well certain moves perform, this is defined by how many games have been won when simulating using a certain move. Using a minimax tree it is possible to represent the moves made by the opponent in an Othello game, where a player would like to maximize its own score and at the same time minimize their opponent's score. 
+Exploration vs exploitation presents itself when we need to make a decision for what Othello move we are going to use to simulate games. Will we choose the best move so far? Or are we going to try other moves to see if they have potential?
 
 \subsection{Tree search}
-The possible moves and their subsequent possible moves can be represented as a tree structure, see figure \ref{fig:othello-gametree} for such a tree with depth 1. Figure \ref{fig:mcts-gametree-values} is a similar tree without images of the boards but with estimations about performance of each node (games won / games played). The root of the tree is the current state of the board. Edges represent (valid) moves, nodes represent a state of the board. Leafs (a node without any children) represents the state of the board of a finished game. A path from the root node to a leaf shows us a way the game could be played. Tree structures like these can be called game trees. Searching through these game trees and finding an optimal or nearly optimal move to make can be achieved via different algorithms. The size of the tree is an important indicator of how complex a game is for an algorithm to handle. This is usually described by a depth and branching factor. In Othello the depth of a tree is limited, it can not be any bigger than 60, because only one piece is played per move and there are 60 empty squares. Not every game ends with a full board, the average amount of moves, and thus the depth of the tree, is around 58. The branching factor is estimated to be around 10 according to L. Allis\cite{Allis:1994}.
+The possible moves and their subsequent possible moves can be represented as a tree structure, see figure \ref{fig:othello-gametree} for such a tree with depth 1. Figure \ref{fig:mcts-gametree-values} is a similar tree without images of the boards but with estimations about the performance of each node (games won / games played). The root of the tree is the current state of the board. Edges represent (valid) moves, nodes represent a state of the board. Leafs (a node without any children) represents the state of the board of a finished game. A path from the root node to a leaf shows us a way the game could be played. Tree structures like these can be called game trees. Searching through these game trees and finding an optimal or nearly optimal move to make can be achieved via different algorithms. The size of the tree is an important indicator of how complex a game is for an algorithm to handle. This is usually described by a depth and branching factor. In Othello the depth of a tree is limited, it can not be any bigger than 60 because only one piece is played per move and there are 60 empty squares. Not every game ends with a full board, the average amount of moves, and thus the depth of the tree, is around 58. The branching factor is estimated to be around 10 according to L. Allis\cite{Allis:1994}.
 
 \begin{figure}[t]
 	\centering
@@ -299,7 +308,7 @@ Minimax is a way to search through a game tree and find a good action in a turn-
 \end{algorithmic}
 \end{algorithm}
 \subsection{Algorithm}
-Because there are many possible board states, the game tree would be far too large to generate completely. Instead of generating the whole tree, MCTS uses simulations to direct what parts of the tree to generate. These simulation steps will very quickly and in usually a stochastic manner `finish' the remainder of the game steps, for instance by making random moves until the game ends. This simulation gives an idea how well the nodes perform. In essence, the simulation is sampling from all possible games that could happen for the node in question. The evaluation of this simulation will be used to update the parent nodes in the tree, which in turn is used to decide what node will be added next and used for the next simulation.
+Because there are many possible board states, the game tree would be far too large to generate completely. Instead of generating the whole tree, MCTS uses simulations to direct what parts of the tree to generate. These simulation steps will very quickly and in usually a stochastic manner `finish' the remainder of the game steps, for instance by making random moves until the game ends. This simulation gives an idea how well the nodes perform. In essence, the simulation is sampling from all possible games that could happen for the node in question. The evaluation of this simulation will be used to update the parent nodes in the tree, which is used to decide what node will be added next and used for the next simulation.
 
 MCTS (algorithm \ref{algo:mcts} for pseudo code) can be split up into four parts:
 \begin{enumerate}
@@ -358,14 +367,14 @@ Kocsis and Szepesv{\'a}ri do not recommend any default values for C in their pap
 
 Their theoretical analysis provides some proofs of theorems discussed. In one of their proofs, c is given the value of $1/\sqrt{2}$. This is done to be able to use Hoeffding's inequality to satisfy conditions needed in the proof.\\
 
-While $c = 1/\sqrt{2}$ is necessary in the theoretical analysis, some research papers recognize this value as being a default or standard value of c and use it to conduct experiments with. For instance \cite{finnsson2011game} claims:
+While $c = 1/\sqrt{2}$ is necessary for the theoretical analysis, some research papers recognize this value as being a default or standard value of c and use it to conduct experiments with. For instance \cite{finnsson2011game} claims:
 \begin{displayquote}
 \textit{"the authors show that when the rewards lie in the interval [0, 1] having $C_p = 1/\sqrt{2}$ gives the least regret"}
 \end{displayquote}
 
 and continues to use it for their experiments. While the quote is true, it is only true when all the assumptions hold and as I will show in the results section it does not give the best results for every problem, in particular for Othello better values for c can be found.
 
-Other papers suggest using $c = \sqrt{2}$, see \cite{de2016monte} without giving an explanation why, hinting it might be used because of it's similarity with the $c = 1/\sqrt{2}$. Outside of academic papers the value appears in various tutorials, talks and on Wikipedia\footnote{\url{https://en.wikipedia.org/wiki/Monte_Carlo_tree_search\#Exploration_and_exploitation}}\footnote{It should be noted Wikipedia does mention it is a theoretical value and in practice is usually chosen empirically.}.\\
+Other papers suggest using $c = \sqrt{2}$, see \cite{de2016monte}, without giving an explanation why it is used, hinting it might be used because of its similarity with the $c = 1/\sqrt{2}$. Outside of academic papers, the value appears in various tutorials, talks and on Wikipedia\footnote{\url{https://en.wikipedia.org/wiki/Monte_Carlo_tree_search\#Exploration_and_exploitation}}\footnote{It should be noted Wikipedia does mention it is a theoretical value and in practice is usually chosen empirically.}.\\
 
 All of this might discourage UCT users from searching for good c-values and settle for $c = 1/\sqrt{2}$ instead, which is basically UCB1.
 
@@ -388,7 +397,7 @@ The MCTS algorithm has been slightly adjusted to take advantage of multiple CPU 
 
 The algorithm has been adjusted as described in the paper Parallel Monte-Carlo Tree Search\cite{chaslot2008parallel} by Guillaume et al. Locking per node has been implemented, meaning when adding a new node to the game tree or when updating values in the game tree the node in question is locked, rather than locking the whole tree.\\
 
-Using multiple threads increases the number simulation runs per second significantly as shown in figure \ref{fig:mcts-threads}. It shows going from one thread to two threads increases the number of simulations done by a factor of 2 to 3. Using three and four threads gives a very small increase in simulations done. More than four threads has been tested but does not show any increase in performance (as expected with 4 CPUs). Because of this the choice has been made to run all tests with four separate threads, although the biggest boost in the number of simulations happened at two threads there's no disadvantage in using four threads.
+Using multiple threads increases the number simulation runs per second significantly as shown in figure \ref{fig:mcts-threads}. It shows going from one thread to two threads increases the number of simulations done by a factor of 2 to 3. Using three and four threads gives a very small increase in simulations done. More than four threads has been tested but does not show any increase in performance (as expected with 4 CPUs). Because of this, the choice has been made to run all tests with four separate threads, although the biggest boost in the number of simulations happened at two threads there's no disadvantage in using four threads.
 
 \begin{figure}
 	\centering
@@ -406,7 +415,7 @@ I have decided on 500ms per move. An Othello game consists of maximally 60 moves
 
 The 500ms is CPU time per thread, with 4 threads this comes down to 2000ms of CPU time total. Figure \ref{fig:mcts-threads} shows the number of simulation runs per move increases as the game progresses. This happens because each simulation takes less time depending on how many moves are left in the game\footnote{Simulations on a board with only one empty square finish a lot faster than having to play out a game with 40 empty squares.}. On average this comes down to 20.000 simulations per move if we do not take into account the big spike at the final few moves\footnote{With the big spike, it would go up to about 40.000 simulation runs.}.\\
 
-Note: An argument can be made to choose a fixed amount of simulations rather than a fixed amount of time. I have chosen for a fixed amount of time because it is the natural limit of search algorithms: time. For example, when implementing extra domain knowledge in the simulations it might take up more time to run each simulation, which is a practical issue when we want to simulate as many moves as possible. If we use a fixed amount of simulations this practical issue does not show up in our results but when fixed the amount of time per move the penalty does show because less simulations are run.
+Note: An argument can be made to choose a fixed amount of simulations rather than a fixed amount of time. I have chosen for a fixed amount of time because it is the natural limit of search algorithms: time. For example, when implementing extra domain knowledge in the simulations it might take up more time to run each simulation, which is a practical issue when we want to simulate as many moves as possible. If we use a fixed amount of simulations this practical issue does not show up in our results but when fixing the amount of time per move the penalty does show because fewer simulations are run.
 
 \begin{figure}
 	\centering
@@ -435,11 +444,11 @@ The second variety is the same as the first by making random moves, except when 
 The final version chooses what moves to make by using a matrix of weights. Each weight corresponding to a square on the Othello board. For instance choosing a corner will have a higher weight than choosing a square in the middle of the board. These weights are normalized per turn for all valid moves and give a probability for each possible move in that turn. See table \ref{table:othello-weights} in the appendix for the weights used. These weights have been calculated by P. Hingston and M. Masek in their paper Experiments with Monte Carlo Othello\cite{hingston2007experiments}. They used an Evolutionary strategy to find good values which they tested against several other algorithms.
 
 \subsection{Performance}
-Figure \ref{fig:mcts-domainknowledge-performance} shows the performance for the three different types of simulations. While there are slight differences and some outliers, all three types behave similar enough that no significant difference is present considering we are looking at performance per c-value. For this reason only the random simulations is used in the experiments.
+Figure \ref{fig:mcts-domainknowledge-performance} shows the performance for the three different types of simulations. While there are slight differences and some outliers, all three types behave similar enough that no significant difference is present considering we are looking at performance per c-value. For this reason, only the random simulations are used in the experiments.
 
 \section{Types of experiments}
 \label{section:type-experiments}
-Three types of experiments have been run. Unless otherwise specified all experiments have been run with 500ms time per move, 4 threads and random simulations.
+Two types of experiments have been run. Unless otherwise specified all experiments have been run with 500ms time per move, 4 threads and random simulations.
 
 \subsection{Ranking}
 \label{section:ranking}
@@ -462,16 +471,6 @@ For example: when the population of c values consists of 12 elements, at 500ms p
 \subsection{1 versus 1 game}
 The second type of test is to determine differences between two specific players. This experiment runs a number of games, ranging from 10 to 300 games, between two players. These 2 players generally only differ by one parameter, such as c-value, or time per move.
 
-\begin{figure}[h]
-	\centering
-	\includegraphics[width=0.25\textwidth]{images/corner-board}
-	\caption{Othello board which allows black to make a corner move and even more importantly if black does not take the corner move, white can in the next move. This makes the corner move by far the best move. The red dots are possible moves for black.}
-	\label{fig:othello-corner-board}
-\end{figure}
-\subsection{Single move analysis}
-The other experiment is about analyzing a single move. This is run on the board shown in figure \ref{fig:othello-corner-board} with it being black's turn. This is a board with 8 possible moves and one move being particularly good. The corner move (0,0) is a lot better than all the others because if black does not take it, white can in the next move. This corner allows for a very good position on the top row and consequently the right columns. This makes for an interesting move to analyze.
-
-
 \begin{figure}
 	\centering
 	\includegraphics[width=0.5\textwidth]{images/othello-beginner-bias}
@@ -479,7 +478,7 @@ The other experiment is about analyzing a single move. This is run on the board 
 	\label{fig:othello-beginner-bias}
 \end{figure}
 \section{Beginner bias}
-For some games a beginner bias exists. This means the player starting has some slight advantage in winning games. If this is the case for Othello we would have to compensate for this, for example by basing the reward in MCTS on multiple games instead of one, so both players start equal number of times.\\
+For some games, a beginner bias exists. This means the player starting has some slight advantage in winning games. If this is the case for Othello we would have to compensate for this, for example by basing the reward in MCTS on multiple games instead of one, so both players start an equal number of times.\\
 
 To test for this bias I have let two identical players with c-value of 0.5 play 30 games against each other. Should no bias exist we should expect a win percentage close to 50\%. Figure \ref{fig:othello-beginner-bias} shows how to win chance changes during those 75 games. And indeed it shows the win percentage of white converges towards 50\%.
 
@@ -524,12 +523,12 @@ A pool of 8 distinct values has been tested using the ranking experiment (see se
 \label{section:narrow-ranking}
 To narrow down on the insight from the previous test, another ranking test has been run with values closer to the best performing values of that previous test. These values are chosen around the 0.1-0.5 interval, the pool consisted of 13 c-values: \{0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 3, 5\}. Values 3 and 5 have been added to confirm there is not a local maximum for these values and give some context to the results we're seeing.\\
 
-The results have been combined in figure \ref{fig:results-rank-015} which shows c-values decline in win percentage the higher it gets, just like the previous experiment. This trend continues all the way to the 3 and 5 values adding more confidence to the claim that we are not dealing with a local maximum. An interesting result shows at a c-value of 0, the win percentage drops to nearly $0\%$.
+The results have been combined in figure \ref{fig:results-rank-015} which shows win percentages decline when c-values are higher, just like the previous experiment. This trend continues all the way to the 3 and 5 values adding more confidence to the claim that we are not dealing with a local maximum. An interesting result shows at a c-value of 0, the win percentage drops to nearly $0\%$.
 Figure \ref{fig:results-rank-01} shows the same data but with a better resolution because the 0, 3 and 5 values have been omitted. It shows an increase in win percentage in the 0.1 to 0.2 range and a decline in the 0.2 to 1.0 range.\\
 
 Zooming in even further using a new ranking experiment, figure \ref{fig:results-rank-narrow} shows the result of having a pool of c-values: \{0.18, 0.19, 0.20, 0.21, 0.22,0.23,0.24\} compete. For values in the 0.18 and 0.24 range win percentages start becoming more erratic and no real downwards slope is present. This seems to indicate the difference between values has become small enough to provide no further benefit.
 
-Note that finding these optimal or very good performing c-values takes quite a bit of time. The time spend on these 4 tests adds up to about 48 hours. It is good to remember this as in certain use-cases it might not be possible or preferable spending this much time, when it is also possible to increase the time per move to compensate.
+Note that finding these optimal or very good performing c-values takes quite a bit of time. The time spend on these 4 tests adds up to about 48 hours. It is good to remember this as in certain use-cases it might not be possible or preferable spending this much time when it is also possible to increase the time per move to compensate.
 
 
 \vfill
@@ -570,7 +569,7 @@ The win chance is based on 100 games for each time per move, this gives a total 
 	\caption{Classic four in a row board.}
 	\label{fig:fourinarow-board}
 \end{figure}
-\section{Reproduce results for different game}
+\section{Reproduce results for a different game}
 To verify this behavior can be attributed to the UCT policy rather than Othello, similar experiments have been run for a different game. The game is called four-in-a-row. (see fig. \ref{fig:fourinarow-board}) This is a simple game which is computationally much easier than Othello. Because of the smaller board and because pieces can not change color once on the board.
 
 \begin{figure}
@@ -598,7 +597,7 @@ The ranking test done in section \ref{section:narrow-ranking} has been duplicate
 	\label{fig:fourinarow-significance}
 \end{figure}
 \subsection{What does a better c-value achieve}
-The test in section \ref{section:optimal-cvalue-achieve} has also been duplicated. For Othello it showed the `default' c-value ($1/\sqrt{2}$) needs over 3 times more time to have equal performance as the optimal c-value (0.2). Four-in-a-row has a very similar result. Figure \ref{fig:fourinarow-significance} shows a player with 0.707 ($1/\sqrt{2}$) needs around 1600ms per move to have a 50\% win rate against a 0.3(optimal for four-in-a-row) player. Which also comes down to around a 3 times increase in time.
+The test in section \ref{section:optimal-cvalue-achieve} has also been duplicated. For Othello it showed the `default' c-value ($1/\sqrt{2}$) needs over 3 times more time to have equal performance as the optimal c-value (0.2). Four-in-a-row has a similar result. Figure \ref{fig:fourinarow-significance} shows a player with 0.707 ($1/\sqrt{2}$) needs around 2500ms per move to have a 50\% win rate against a 0.3(optimal for four-in-a-row) player. Which also comes down to a 5 times increase in time.
 
 \chapter{Conclusion}
 In this paper I have sought to answer how important it is to use an optimal c-value for UCT. Using the board game Othello experiments have been run to see if and how different values for this c-value impact the performance of UCT. The results show a good c-value can have a significant positive impact.
@@ -676,8 +675,8 @@ Future work might include looking at different types problems because the two pr
 \subsection{Graph}
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=1\textwidth]{images/rank-015-3-sims}
-	\caption{Same test as \ref{fig:results-rank-015} but with 3 seperate domain knowledge implementations. Raw data below.}
+	\includegraphics[width=1\textwidth]{images/rank-015-3-sims.png}
+	\caption{Same test as \ref{fig:results-rank-015} but with 3 separate domain knowledge implementations. Raw data below.}
 \end{figure}
 
 \subsection{Random simulation}
@@ -889,16 +888,16 @@ Future work might include looking at different types problems because the two pr
 	\begin{tabular}{|l||l|l|l|l|l|l|l|l|l|l|}
 		\hline
 		& 0.1 & 0.2 & 0.3 & 0.4 & 0.5 & 0.6 & 0.7 & 0.8 & 0.9 & 1  \\ \hline\hline
-		0.1 & 0   & 6   & 5   & 2   & 7   & 8   & 9   & 10  & 12  & 10 \\ \hline
-		0.2 & 14  & 0   & 10  & 11  & 8   & 14  & 14  & 15  & 17  & 17 \\ \hline
-		0.3 & 15  & 10  & 0   & 7   & 13  & 17  & 18  & 17  & 17  & 19 \\ \hline
-		0.4 & 18  & 9   & 13  & 0   & 11  & 16  & 16  & 15  & 17  & 19 \\ \hline
-		0.5 & 13  & 12  & 7   & 9   & 0   & 16  & 12  & 13  & 12  & 17 \\ \hline
-		0.6 & 12  & 6   & 3   & 4   & 4   & 0   & 11  & 13  & 10  & 15 \\ \hline
-		0.7 & 11  & 6   & 2   & 4   & 8   & 9   & 0   & 12  & 12  & 16 \\ \hline
-		0.8 & 10  & 5   & 3   & 5   & 7   & 7   & 8   & 0   & 9   & 14 \\ \hline
-		0.9 & 8   & 3   & 3   & 3   & 8   & 10  & 8   & 11  & 0   & 10 \\ \hline
-		1   & 10  & 3   & 1   & 1   & 3   & 5   & 4   & 6   & 10  & 0  \\ \hline
+		0.1 & -   & 6   & 5   & 2   & 7   & 8   & 9   & 10  & 12  & 10 \\ \hline
+		0.2 & 14  & -   & 10  & 11  & 8   & 14  & 14  & 15  & 17  & 17 \\ \hline
+		0.3 & 15  & 10  & -   & 7   & 13  & 17  & 18  & 17  & 17  & 19 \\ \hline
+		0.4 & 18  & 9   & 13  & -   & 11  & 16  & 16  & 15  & 17  & 19 \\ \hline
+		0.5 & 13  & 12  & 7   & 9   & -   & 16  & 12  & 13  & 12  & 17 \\ \hline
+		0.6 & 12  & 6   & 3   & 4   & 4   & -   & 11  & 13  & 10  & 15 \\ \hline
+		0.7 & 11  & 6   & 2   & 4   & 8   & 9   & -   & 12  & 12  & 16 \\ \hline
+		0.8 & 10  & 5   & 3   & 5   & 7   & 7   & 8   & -   & 9   & 14 \\ \hline
+		0.9 & 8   & 3   & 3   & 3   & 8   & 10  & 8   & 11  & -   & 10 \\ \hline
+		1   & 10  & 3   & 1   & 1   & 3   & 5   & 4   & 6   & 10  & -  \\ \hline
 	\end{tabular}
 	\caption{Four in a row - wide search}
 	\label{table:fourinarow-wide}
@@ -911,14 +910,14 @@ Future work might include looking at different types problems because the two pr
 	\begin{tabular}{|l||l|l|l|l|l|l|l|l|}
 		\hline
 		& 0.2 & 0.3 & 0.32 & 0.34 & 0.36 & 0.38 & 0.4 & 0.5 \\ \hline\hline
-		0.2  & 0   & 11  & 9    & 9    & 11   & 9    & 10  & 12  \\ \hline
-		0.3  & 9   & 0   & 8    & 12   & 11   & 8    & 11  & 14  \\ \hline
-		0.32 & 11  & 12  & 0    & 14   & 7    & 14   & 10  & 14  \\ \hline
-		0.34 & 11  & 8   & 6    & 0    & 11   & 12   & 11  & 12  \\ \hline
-		0.36 & 9   & 9   & 13   & 9    & 0    & 11   & 10  & 12  \\ \hline
-		0.38 & 11  & 12  & 6    & 8    & 9    & 0    & 13  & 13  \\ \hline
-		0.4  & 10  & 9   & 10   & 9    & 10   & 7    & 0   & 14  \\ \hline
-		0.5  & 8   & 6   & 6    & 8    & 8    & 7    & 6   & 0   \\ \hline
+		0.2  & -   & 11  & 9    & 9    & 11   & 9    & 10  & 12  \\ \hline
+		0.3  & 9   & -   & 8    & 12   & 11   & 8    & 11  & 14  \\ \hline
+		0.32 & 11  & 12  & -    & 14   & 7    & 14   & 10  & 14  \\ \hline
+		0.34 & 11  & 8   & 6    & -    & 11   & 12   & 11  & 12  \\ \hline
+		0.36 & 9   & 9   & 13   & 9    & -    & 11   & 10  & 12  \\ \hline
+		0.38 & 11  & 12  & 6    & 8    & 9    & -    & 13  & 13  \\ \hline
+		0.4  & 10  & 9   & 10   & 9    & 10   & 7    & -   & 14  \\ \hline
+		0.5  & 8   & 6   & 6    & 8    & 8    & 7    & 6   & -   \\ \hline
 	\end{tabular}
 	\caption{Four in a row - narrow search}
 	\label{table:fourinarow-narrow}
@@ -930,14 +929,18 @@ Future work might include looking at different types problems because the two pr
 \begin{tabular}{|l||l|l|l|l|}
 	\hline
 	Ai 2 time & Games played & Ai 1 games won & Ai 2 games won & AI 1 win \% \\ \hline \hline
-	500       & 100          & 65             & 35             & 0.65        \\ \hline
-	1000       & 100          & 66             & 34             & 0.66        \\ \hline
-	1250       & 100          & 59             & 41             & 0.59        \\ \hline
-	1500       & 100          & 53             & 47             & 0.53        \\ \hline
-	1600       & 200          & 100            & 100            & 0.5         \\ \hline
-	1700       & 100          & 48             & 52             & 0.48        \\ \hline
-	1800       & 100          & 46             & 54             & 0.46        \\ \hline
-	2000       & 100          & 44             & 56             & 0.44        \\ \hline
+	500       & 100          & 83             & 17             & 0.83        \\ \hline
+	1000      & 100          & 73             & 27             & 0.73        \\ \hline
+	1250      & 100          & 76             & 24             & 0.76        \\ \hline
+	1500      & 100          & 68             & 32             & 0.68        \\ \hline
+	1600      & 100          & 62             & 38             & 0.62        \\ \hline
+	1700      & 100          & 67             & 33             & 0.67        \\ \hline
+	1800      & 100          & 59             & 41             & 0.59        \\ \hline
+	2000      & 100          & 57             & 43             & 0.57        \\ \hline
+	2250      & 100          & 55             & 45             & 0.55        \\ \hline
+	2500      & 200          & 98             & 102            & 0.49        \\ \hline
+	2750      & 100          & 42             & 58             & 0.42        \\ \hline
+
 \end{tabular}
 	\caption{Game data for 2 ai players. AI player 1 had a c-value of 0.3 and 500ms per move. AI player 2 had a c-value of $1/\sqrt{2}$ and increasing time per move (column 1)}
 	\label{table:fourinarow-significance}
